@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0F2237">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: blob:; media-src blob: data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="author" content="Fernando Borrás Rocher; Elena Caride Miana">
+<meta name="description" content="UrgencIA: protocolos de urgencia para la consulta de medicina estética (oclusión vascular, pérdida de visión, anafilaxia, toxicidad sistémica por anestésico local y síncope vasovagal) con cronómetro, registro de acciones con su hora, dosis calculadas según el peso y los valores del protocolo de la consulta, informe de traslado y revisión del carro de urgencias. Funciona sin IA y sin conexión. Español, inglés y portugués.">
+<title>UrgencIA · Urgencias en la consulta de medicina estética</title><link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --tinta:#0F2237; --acero:#2E4B6B; --acero-claro:#7C93AC; --gris:#5D7691;
+  --papel:#F3F6FA; --blanco:#FFFFFF; --linea:#D8E0E9; --linea-2:#E8EEF4;
+  --brasa:#E4572E; --brasa-osc:#C9441F; --brasa-suave:#FDEBE4;
+  --forjado:#0E7C6B; --forjado-suave:#E0F3EE; --aviso:#8A3617;
+  --c-ctx:#1F6FB2; --c-comp:#6B4FD8; --c-rda:#0E8C7A; --c-tema:#C98200; --c-eval:#E4572E; --c-final:#2E4B6B;
+  --sombra:0 1px 0 rgba(15,34,55,.05), 0 14px 34px -22px rgba(15,34,55,.45);
+  --sombra-alta:0 2px 0 rgba(15,34,55,.04), 0 22px 50px -24px rgba(15,34,55,.55);
+  --r:14px;
+  --display:"Bricolage Grotesque",Georgia,serif;
+  --texto:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--papel);color:var(--tinta);font-family:var(--texto);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;padding-bottom:84px}
+a{color:var(--acero)}
+:focus-visible{outline:3px solid var(--brasa);outline-offset:2px;border-radius:6px}
+.hidden{display:none!important}
+svg.i{width:1.15em;height:1.15em;vertical-align:-.2em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+code{font-family:var(--mono);font-size:.85em;background:var(--linea-2);padding:1px 5px;border-radius:5px}
+
+/* Barra superior */
+.topbar{position:sticky;top:0;z-index:40;background:var(--tinta);color:#EAF1F7;box-shadow:0 6px 24px -14px rgba(0,0,0,.6)}
+.tb-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px}
+.logo{background:none;border:0;color:#fff;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.03em;cursor:pointer;padding:2px 4px;display:flex;align-items:center;gap:8px}
+.logo em{font-style:normal;color:var(--brasa)}
+.logo .anv{width:30px;height:30px;border-radius:9px;background:var(--brasa);display:grid;place-items:center;color:#fff}
+.stepper{flex:1;display:flex;align-items:center;justify-content:center;min-width:0}
+.sdot{display:flex;align-items:center;gap:7px;background:none;border:0;color:#8FA7BE;font:600 13px var(--texto);padding:6px;cursor:pointer;border-radius:10px;white-space:nowrap}
+.sdot:disabled{cursor:not-allowed;opacity:.45}
+.sdot .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid #3E5C7D;font-size:12px;color:#A9C0D4;transition:all .2s}
+.sdot .n svg{width:14px;height:14px}
+.sdot[data-state="done"] .n{background:var(--forjado);border-color:var(--forjado);color:#fff}
+.sdot[data-state="now"]{color:#fff}
+.sdot[data-state="now"] .n{background:var(--brasa);border-color:var(--brasa);color:#fff;box-shadow:0 0 0 4px rgba(228,87,46,.25)}
+.sdot:not(:disabled):hover{background:rgba(255,255,255,.06)}
+.sline{flex:0 1 26px;height:2px;background:#2F4A68;min-width:6px}
+.sline.on{background:var(--forjado)}
+.tb-tools{display:flex;gap:6px}
+.tb-btn{background:transparent;border:1px solid #3E5C7D;color:#C9D8E6;border-radius:9px;padding:6px 10px;font:600 13px var(--texto);cursor:pointer;display:flex;align-items:center;gap:6px}
+.tb-btn:hover{border-color:var(--brasa);color:#fff}
+.progress{height:4px;background:#1E3550}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brasa),#F59E0B);transition:width .4s}
+@media(max-width:960px){.sdot .lbl{display:none}.sdot[data-state="now"] .lbl{display:inline}}
+@media(max-width:720px){
+  .tb-in{flex-wrap:wrap;gap:8px}
+  .stepper{order:3;flex-basis:100%;justify-content:space-between}
+  .sdot[data-state="now"] .lbl{display:none}
+  .tb-btn .lbl{display:none}
+}
+
+/* Pantallas */
+main{max-width:1180px;margin:0 auto;padding:26px 16px 40px}
+.screen{display:none}
+.screen.on{display:block}
+@media(prefers-reduced-motion:no-preference){.screen.on{animation:rise .35s cubic-bezier(.2,.7,.3,1) both}@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}}
+.sh{display:flex;gap:18px;align-items:flex-start;margin:4px 0 22px}
+.sh-ico{width:64px;height:64px;border-radius:18px;background:var(--c,var(--brasa));color:#fff;display:grid;place-items:center;flex:none;box-shadow:0 12px 24px -14px var(--c,var(--brasa))}
+.sh-ico svg{width:32px;height:32px}
+.sh-step{font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acero-claro);margin:4px 0}
+.sh h2{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.6vw,38px);letter-spacing:-.025em;line-height:1.05;margin:0 0 6px}
+.sh-lede{margin:0;color:var(--gris);font-size:16.5px;max-width:70ch}
+@media(max-width:600px){.sh-ico{width:48px;height:48px;border-radius:14px}.sh-ico svg{width:24px;height:24px}}
+
+.card{background:var(--blanco);border:1px solid var(--linea);border-radius:var(--r);box-shadow:var(--sombra);padding:20px;margin-bottom:18px}
+.card h3{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em;margin:0 0 4px;display:flex;align-items:center;gap:9px}
+.card h3 .num{width:26px;height:26px;border-radius:8px;background:var(--tinta);color:#fff;font:700 13px var(--mono);display:grid;place-items:center}
+.card .sub{margin:0 0 14px;color:var(--gris);font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cols{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:20px;align-items:start}
+.sticky{position:sticky;top:96px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}.sticky{position:static}}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+label,.lab{display:block;font-size:13.5px;font-weight:600;margin:0 0 6px;color:var(--acero)}
+label small,.lab small{font-weight:500;color:var(--acero-claro)}
+input[type=text],input[type=password],input[type=number],textarea,select{width:100%;padding:11px 13px;border:1.5px solid var(--linea);border-radius:10px;font-family:var(--texto);font-size:15px;color:var(--tinta);background:#fff;transition:border-color .15s,box-shadow .15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acero-claro);box-shadow:0 0 0 4px rgba(124,147,172,.18)}
+input.bad{border-color:var(--brasa);box-shadow:0 0 0 4px rgba(228,87,46,.15)}
+textarea{resize:vertical;min-height:96px;line-height:1.5}
+input::placeholder,textarea::placeholder{color:#9DB0C2}
+.field{margin-bottom:16px}
+.help{font-size:12.8px;color:var(--gris);margin:6px 0 0}
+.help b{color:var(--acero)}
+
+button{font-family:var(--texto);cursor:pointer}
+.btn{display:inline-flex;align-items:center;gap:8px;border-radius:11px;font-weight:600;font-size:15px;border:1.5px solid transparent;padding:11px 18px;transition:transform .08s,background .15s,border-color .15s;text-decoration:none;line-height:1.2}
+.btn:active{transform:translateY(1px)}
+.btn-primary{background:var(--brasa);color:#fff;box-shadow:0 8px 18px -10px var(--brasa)}
+.btn-primary:hover{background:var(--brasa-osc)}
+.btn-big{font-size:17px;padding:14px 24px;border-radius:13px}
+.btn-dark{background:var(--tinta);color:#fff}
+.btn-dark:hover{background:#1c3656}
+.btn-ghost{background:#fff;border-color:var(--linea);color:var(--acero)}
+.btn-ghost:hover{border-color:var(--acero-claro);background:#F7FAFC}
+.btn-ok{background:var(--forjado);color:#fff}
+.btn-ok:hover{background:#0b6457}
+.btn-word{background:#2B579A;color:#fff}
+.btn-word:hover{background:#1e3f7a}
+.btn-sm{padding:7px 12px;font-size:13.5px;border-radius:9px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:#fff;border:1.5px solid var(--linea);border-radius:999px;padding:7px 13px;font-size:13.5px;color:var(--acero);cursor:pointer;display:inline-flex;align-items:center;gap:6px;line-height:1.25;text-align:left}
+.chip:hover{border-color:var(--brasa);color:var(--brasa)}
+.chip[aria-pressed="true"]{background:var(--tinta);border-color:var(--tinta);color:#fff}
+.chip.mini-ex{font-size:12.5px;padding:4px 10px;border-style:dashed}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1.5px solid var(--linea);background:#fff;border-radius:9px;padding:7px 11px;font-size:13.5px;font-weight:600;color:var(--acero)}
+.seg button:hover{border-color:var(--acero-claro)}
+.seg button[aria-pressed="true"]{background:var(--tinta);border-color:var(--tinta);color:#fff}
+
+.meto{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.meto button{text-align:left;background:#fff;border:1.5px solid var(--linea);border-radius:12px;padding:10px 12px;color:var(--tinta)}
+.meto button b{display:block;font-size:14px}
+.meto button span{display:block;font-size:12.3px;color:var(--gris);line-height:1.35;margin-top:2px}
+.meto button:hover{border-color:var(--acero-claro)}
+.meto button[aria-pressed="true"]{border-color:var(--tinta);box-shadow:0 0 0 2px var(--tinta);background:var(--papel)}
+
+.tip{display:flex;gap:12px;background:#FFF8E6;border:1px solid #F3DDA0;border-radius:12px;padding:13px 15px;font-size:14px;color:#6B4E00;margin-bottom:18px}
+.tip svg{width:22px;height:22px;color:#C98200;flex:none;margin-top:1px}
+.tip strong{color:#523B00}
+.aviso{background:var(--brasa-suave);border:1px solid #F3C7B5;border-radius:12px;padding:13px 15px;font-size:14px;color:var(--aviso);margin-bottom:16px}
+.okbox{background:var(--forjado-suave);border:1px solid #A9DCCF;border-radius:12px;padding:13px 15px;font-size:14px;color:#0B5A4E;margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+
+/* Inicio */
+.hero{background:var(--tinta);color:#EAF1F7;border-radius:22px;padding:40px 36px;position:relative;overflow:hidden;margin-bottom:26px;box-shadow:var(--sombra-alta)}
+.hero::before{content:"";position:absolute;right:-80px;top:-80px;width:360px;height:360px;border-radius:50%;background:radial-gradient(circle,rgba(228,87,46,.55),transparent 65%)}
+.hero::after{content:"";position:absolute;left:30%;bottom:-140px;width:420px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(14,140,122,.35),transparent 65%)}
+.hero>*{position:relative;z-index:1}
+@media(max-width:600px){.hero{padding:28px 20px;border-radius:18px}}
+.eyebrow{font:600 11.5px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#8FA7BE;margin:0 0 14px}
+.hero h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,5.4vw,58px);line-height:.98;letter-spacing:-.035em;margin:0 0 16px;max-width:17ch}
+.hero h1 em{font-style:normal;color:var(--brasa)}
+.hero p.lede{max-width:62ch;font-size:18px;color:#C3D3E2;margin:0 0 24px}
+.hero .actions .btn-ghost{background:transparent;color:#fff;border-color:#4A6787}
+.hero .actions .btn-ghost:hover{border-color:#fff}
+.draft{margin-top:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14.5px}
+.sec-title{font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.02em;margin:34px 0 6px}
+.sec-sub{color:var(--gris);margin:0 0 16px}
+.journey{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.jstop{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:16px;position:relative}
+.jstop .ji{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;background:var(--c);margin-bottom:10px}
+.jstop .ji svg{width:20px;height:20px}
+.jstop b{display:block;font-size:15px;margin-bottom:2px}
+.jstop span{display:block;font-size:13px;color:var(--gris);line-height:1.45}
+.jstop .jn{position:absolute;top:12px;right:14px;font:700 12px var(--mono);color:var(--acero-claro)}
+@media(max-width:900px){.journey{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.journey{grid-template-columns:1fr}}
+
+.parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.part{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px 14px}
+.part .pi{width:34px;height:34px;border-radius:10px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);display:grid;place-items:center;flex:none}
+.part b{display:block;font-size:14.5px}
+.part span{display:block;font-size:12.8px;color:var(--gris);line-height:1.4}
+
+.examples{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.excard{background:#fff;border:1px solid var(--linea);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--sombra);position:relative;overflow:hidden;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.excard:hover{transform:translateY(-3px);box-shadow:var(--sombra-alta)}
+.excard::before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:var(--c)}
+.excard .emo{font-size:32px;line-height:1}
+.excard .area{font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--acero-claro)}
+.excard b{font-family:var(--display);font-size:18px;letter-spacing:-.01em;line-height:1.15}
+.excard p{margin:0;font-size:13.5px;color:var(--gris);flex:1}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 12%,#fff);border-radius:999px;padding:3px 9px;align-self:flex-start}
+
+/* Clave */
+.keyrow{display:flex;gap:8px}
+.keyrow input{flex:1;font-family:var(--mono);font-size:14px}
+.eye{width:46px;flex:none;border:1.5px solid var(--linea);background:#fff;border-radius:10px;color:var(--acero);display:grid;place-items:center}
+.light{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;background:var(--papel);margin-top:14px;font-size:14.5px;font-weight:600}
+.light .bulbo{width:14px;height:14px;border-radius:50%;background:#B8C5D3;box-shadow:0 0 0 4px rgba(184,197,211,.3);flex:none}
+.light[data-s="ok"] .bulbo{background:#16A34A;box-shadow:0 0 0 4px rgba(22,163,74,.22)}
+.light[data-s="err"] .bulbo{background:var(--brasa);box-shadow:0 0 0 4px rgba(228,87,46,.22)}
+.light[data-s="wait"] .bulbo{background:#F59E0B;box-shadow:0 0 0 4px rgba(245,158,11,.25)}
+.olsteps{list-style:none;padding:0;margin:0;counter-reset:o;display:flex;flex-direction:column;gap:12px}
+.olsteps li{counter-increment:o;display:flex;gap:12px;font-size:14.5px;align-items:flex-start}
+.olsteps li::before{content:counter(o);width:28px;height:28px;border-radius:50%;background:var(--brasa-suave);color:var(--brasa);font:700 13px var(--mono);display:grid;place-items:center;flex:none}
+
+/* Acordeones */
+.acc{background:#fff;border:1px solid var(--linea);border-radius:var(--r);margin-bottom:12px;box-shadow:var(--sombra);overflow:hidden}
+.acc>summary{list-style:none;cursor:pointer;padding:15px 18px;display:flex;align-items:center;gap:12px}
+.acc>summary::-webkit-details-marker{display:none}
+.acc>summary .ai{width:36px;height:36px;border-radius:10px;background:var(--papel);color:var(--acero);display:grid;place-items:center;flex:none}
+.acc[open]>summary .ai{background:var(--tinta);color:#fff}
+.acc>summary b{font-family:var(--display);font-size:17px;display:block}
+.acc>summary small{display:block;color:var(--gris);font-size:13px}
+.acc>summary .chev{margin-left:auto;transition:transform .2s;color:var(--acero-claro)}
+.acc[open]>summary .chev{transform:rotate(180deg)}
+.acc .inner{padding:4px 18px 18px;border-top:1px solid var(--linea-2)}
+.acc .inner>*:first-child{margin-top:14px}
+.prompt-ta{font-family:var(--mono);font-size:12.3px;min-height:130px;background:#FBFDFE}
+
+/* Resumen lateral */
+.sum h3{margin-bottom:10px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.stat{background:var(--papel);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font:800 24px var(--display);letter-spacing:-.02em;line-height:1.1}
+.stat span{font-size:12.3px;color:var(--gris)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.checks li{display:flex;gap:9px;align-items:center;color:var(--gris)}
+.checks li .ck{width:20px;height:20px;border-radius:50%;border:2px solid var(--linea);display:grid;place-items:center;flex:none}
+.checks li.on{color:var(--tinta)}
+.checks li.on .ck{background:var(--forjado);border-color:var(--forjado);color:#fff}
+.checks li .ck svg{width:12px;height:12px}
+.docname{margin-top:14px;padding:11px 13px;border-radius:11px;background:var(--tinta);color:#C3D3E2;font-size:13.5px}
+.docname b{color:#fff}
+
+/* Generación */
+.agents{display:flex;flex-direction:column;gap:10px}
+.agent{background:#fff;border:1px solid var(--linea);border-radius:var(--r);box-shadow:var(--sombra);overflow:hidden;transition:border-color .2s}
+.agent-h{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer}
+.agent .ai{width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);display:grid;place-items:center;flex:none;transition:all .2s}
+.agent .ai svg{width:20px;height:20px}
+.agent-t{flex:1;min-width:0}
+.agent-t b{display:block;font-family:var(--display);font-size:16.5px}
+.agent-t span{display:block;font-size:13px;color:var(--gris)}
+.pill{font-size:12.5px;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--linea-2);color:var(--gris);white-space:nowrap}
+.agent[data-s="run"]{border-color:#F59E0B}
+.agent[data-s="run"] .ai{background:var(--c);color:#fff;animation:pulse 1s infinite alternate}
+.agent[data-s="run"] .pill{background:#FFF1D6;color:#8A5A00}
+.agent[data-s="ok"] .ai{background:var(--c);color:#fff}
+.agent[data-s="ok"] .pill{background:var(--forjado-suave);color:var(--forjado)}
+.agent[data-s="err"]{border-color:var(--brasa)}
+.agent[data-s="err"] .pill{background:var(--brasa-suave);color:var(--brasa)}
+.agent-b{display:none;padding:4px 18px 16px 72px;font-size:14px;border-top:1px solid var(--linea-2);background:#FBFDFE}
+.agent.open .agent-b{display:block}
+@media(max-width:600px){.agent-b{padding-left:18px}}
+@keyframes pulse{from{transform:scale(1);box-shadow:0 0 0 0 rgba(228,87,46,.5)}to{transform:scale(1.06);box-shadow:0 0 0 10px rgba(228,87,46,0)}}
+.forging{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;background:var(--tinta);color:#fff;margin-bottom:16px}
+.forging .spark{width:44px;height:44px;border-radius:12px;background:var(--brasa);display:grid;place-items:center;flex:none;animation:pulse 1s infinite alternate}
+.forging.done .spark{background:var(--forjado);animation:none}
+.forging.err .spark{animation:none}
+.forging b{font-family:var(--display);font-size:18px;display:block}
+.forging span{font-size:14px;color:#C3D3E2}
+.mini-list{margin:10px 0 0;padding:0;list-style:none}
+.mini-list li{padding:5px 0;border-bottom:1px solid var(--linea-2)}
+.mini-list li:last-child{border-bottom:0}
+.code{display:inline-block;font:700 11px var(--mono);border-radius:5px;padding:1px 6px;margin-right:6px;background:var(--linea-2);color:var(--acero)}
+
+/* Guía */
+.res-head{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.res-head h2{font-family:var(--display);font-weight:800;font-size:clamp(24px,3vw,32px);letter-spacing:-.02em;margin:0;flex:1;min-width:240px;line-height:1.1}
+.doc{background:#fff;border:1px solid var(--linea);border-radius:18px;box-shadow:var(--sombra-alta);padding:40px 44px;max-width:900px;margin:0 auto}
+@media(max-width:700px){.doc{padding:22px 16px}}
+.doc-h{border-bottom:3px solid var(--tinta);padding-bottom:18px;margin-bottom:26px}
+.doc-kind{font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--brasa);margin:0 0 6px}
+.doc-h h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,3.4vw,36px);letter-spacing:-.025em;line-height:1.05;margin:0 0 12px}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.meta span{font-size:12.8px;font-weight:600;background:var(--papel);color:var(--acero);border-radius:999px;padding:4px 11px}
+.dsec{margin-bottom:28px}
+.dsec h2{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:-.01em;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.dsec h2 .num{width:28px;height:28px;border-radius:8px;background:var(--tinta);color:#fff;font:700 13px var(--mono);display:grid;place-items:center;flex:none}
+.dsec p{margin:0 0 10px;max-width:75ch}
+.sublab{font-size:13px;font-weight:700;color:var(--acero-claro);margin:14px 0 6px}
+.row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--linea-2);font-size:14.5px;align-items:flex-start}
+.row:last-child{border-bottom:0}
+.row .code{margin-top:2px;flex:none}
+.code.cg{background:#E6F0FA;color:var(--c-ctx)}
+.code.ce{background:#EEEAFB;color:var(--c-comp)}
+.code.bl{background:var(--forjado-suave);color:var(--forjado)}
+.code.tm{background:var(--tinta);color:#fff}
+.row .hrs{margin-left:auto;font-size:12.5px;color:var(--gris);white-space:nowrap}
+.blk{font-weight:700;margin:16px 0 4px;display:flex;gap:8px;align-items:baseline}
+.blk small{font-weight:500;color:var(--gris)}
+.tbl-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{background:var(--tinta);color:#fff;text-align:left;padding:9px 11px;font-size:12.5px;font-weight:700}
+table.t td{padding:9px 11px;border-bottom:1px solid var(--linea-2);vertical-align:top}
+table.t tr:nth-child(even) td{background:#FAFCFE}
+.peso{font-weight:800;color:var(--brasa);white-space:nowrap}
+.note{margin-top:12px;padding:11px 14px;background:var(--papel);border-left:4px solid var(--forjado);border-radius:8px;font-size:14px}
+.demo-flag{background:#FFF8E6;border:1px solid #F3DDA0;color:#6B4E00;border-radius:12px;padding:11px 15px;font-size:14px;margin:0 auto 16px;max-width:900px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo-flag svg{color:#C98200}
+
+/* Navegación inferior */
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:35;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--linea)}
+.bn-in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.bn-hint{flex:1;text-align:center;font-size:14px;color:var(--gris)}
+.bn-hint b{color:var(--tinta)}
+@media(max-width:600px){.bn-hint{display:none}.bn-in{justify-content:space-between}}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(15,34,55,.55);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;overflow:auto}
+.modal.on{display:flex}
+.modal-box{background:#fff;border-radius:18px;max-width:760px;width:100%;box-shadow:var(--sombra-alta);overflow:hidden}
+.modal-head{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--tinta);color:#fff}
+.modal-head h2{font-family:var(--display);font-size:22px;margin:0;flex:1}
+.modal-head button{background:transparent;border:1px solid #4A6787;color:#fff;border-radius:9px;padding:6px 10px}
+.modal-body{padding:18px 20px 22px}
+.glos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:600px){.glos{grid-template-columns:1fr}}
+.glos div{background:var(--papel);border-radius:12px;padding:12px 14px}
+.glos b{display:block;font-family:var(--display);font-size:16px;margin-bottom:2px}
+.glos span{font-size:13.8px;color:var(--acero)}
+.hist{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--linea);border-radius:12px;margin-bottom:8px}
+.hist-t{flex:1;min-width:0;cursor:pointer}
+.hist-t b{display:block;font-size:15px}
+.hist-t span{font-size:12.8px;color:var(--gris)}
+.hist:hover{border-color:var(--acero-claro)}
+.iconbtn{width:34px;height:34px;border-radius:9px;border:1.5px solid var(--linea);background:#fff;color:var(--acero);display:grid;place-items:center;padding:0}
+.iconbtn:hover{border-color:var(--brasa);color:var(--brasa)}
+.empty{text-align:center;color:var(--gris);padding:30px 10px}
+
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:var(--tinta);color:#fff;padding:11px 18px;border-radius:12px;font-size:14.5px;font-weight:600;opacity:0;pointer-events:none;transition:all .25s;z-index:70;max-width:90vw;text-align:center;box-shadow:var(--sombra-alta)}
+.toast.on{opacity:1;transform:translateX(-50%)}
+footer{max-width:1180px;margin:0 auto;padding:0 16px 30px;font-size:13px;color:#6E8299}
+footer hr{border:0;border-top:1px solid var(--linea);margin:0 0 14px}
+
+@media print{
+  body{background:#fff;padding:0}
+  .topbar,.bottomnav,.res-head,.demo-flag,.okbox,footer,.toast,.modal{display:none!important}
+  main{padding:0;max-width:none}
+  .screen{display:none!important}
+  
+  .doc{box-shadow:none;border:0;padding:0;max-width:none}
+  .dsec{break-inside:avoid-page}
+  table.t th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+/* ══ v2 ══ */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:640px){.grid3{grid-template-columns:1fr}}
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:960px){.feats{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.feats{grid-template-columns:1fr}}
+.feat{background:#fff;border:1px solid var(--linea);border-radius:14px;padding:16px;border-top:4px solid var(--c)}
+.feat .pi{width:38px;height:38px;border-radius:11px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);display:grid;place-items:center;margin-bottom:10px}
+.feat b{display:block;font-family:var(--display);font-size:17px;margin-bottom:3px}
+.feat span{display:block;font-size:13.5px;color:var(--gris);line-height:1.45}
+.importbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--tinta);color:#EAF1F7;border-radius:var(--r);padding:14px 16px;margin-bottom:18px}
+.importbar .pi{width:40px;height:40px;border-radius:11px;background:var(--brasa);display:grid;place-items:center;flex:none}
+.importbar b{display:block;font-size:15px}
+.importbar span{display:block;font-size:13.3px;color:#A9C0D4}
+.importbar .btn-dark{background:#fff;color:var(--tinta)}
+.importbar .btn-dark:hover{background:#EAF1F7}
+.inacc{border-top:1px solid var(--linea-2);margin-top:4px;padding-top:12px}
+.inacc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--acero)}
+.inacc>summary::-webkit-details-marker{display:none}
+.inacc>summary .chev{margin-left:auto;transition:transform .2s;color:var(--acero-claro)}
+.inacc[open]>summary .chev{transform:rotate(180deg)}
+.rec{display:inline-block;font:700 11px var(--texto);background:var(--forjado-suave);color:var(--forjado);border-radius:999px;padding:2px 8px;vertical-align:2px;margin-left:4px}
+.checkgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.checkgrid{grid-template-columns:1fr}}
+.checkgrid label{display:flex;gap:9px;align-items:center;margin:0;padding:9px 11px;border-radius:10px;background:var(--papel);font-weight:500;color:var(--tinta);cursor:pointer;font-size:14px}
+.checkgrid input{width:18px;height:18px;accent-color:var(--forjado);margin:0}
+.checkgrid label:has(input:checked){background:var(--forjado-suave)}
+.drop{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border:2px dashed var(--linea);border-radius:14px;padding:24px;cursor:pointer;color:var(--acero);margin:0;font-weight:500}
+.drop svg{width:30px;height:30px;color:var(--brasa)}
+.drop b{font-size:15px;color:var(--tinta)}
+.drop span{font-size:13px;color:var(--gris)}
+.drop.over,.drop:hover{border-color:var(--brasa);background:var(--brasa-suave)}
+
+
+
+/* selector de idioma (65-i18n) */
+.tb-lang{display:flex;align-items:center}.tb-sel{background:transparent;border:1px solid #3E5C7D;color:#C9D8E6;border-radius:9px;padding:6px 8px;font:600 13px var(--texto);cursor:pointer;max-width:120px}.tb-sel:hover{border-color:var(--brasa);color:#fff}.tb-sel:focus-visible{outline:2px solid var(--brasa);outline-offset:2px}.tb-sel option{color:#0F2237;background:#fff}
+/* ══ Estilos propios de la app (se añaden a forja-base.css). Prefijo fa- para no chocar con clases de Forja ══ */
+.logo .anv{background:linear-gradient(135deg,var(--brasa),#C98200)}
+.hero{padding:44px 38px 30px}.hero h1{max-width:20ch}.fa-inicio{margin:14px 0 0;font-size:14px;color:#C3D3E2}.fa-inicio:empty{display:none}.fa-inicio b{color:#fff}
+/* autores con ORCID */
+.fa-autores{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14)}.fa-autores-cap{font:600 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:#8FA7BE;width:100%;margin-bottom:-4px}
+.fa-autor{display:flex;gap:11px;align-items:center}.fa-autor b{display:block;color:#fff;font:700 16px var(--display)}.fa-autor small{display:block;color:#9DB6CD;font-size:12.5px;max-width:34ch}.fa-av{width:44px;height:44px;border-radius:14px;background:var(--c);color:#fff;display:grid;place-items:center;font:800 15px var(--display);flex:none;box-shadow:0 10px 20px -12px var(--c)}.fa-x{font:300 26px var(--display);color:#5D7C9B}
+.fa-orcid{display:block;margin-top:2px;font:600 11.5px var(--mono);letter-spacing:.02em;color:#7FD6C4!important;text-decoration:none}.fa-orcid:hover{text-decoration:underline}.fa-idea{width:100%;margin:2px 0 0;font-size:13px;color:#9DB6CD;max-width:72ch}
+/* zonas «dónde va cada cosa» */
+.zonas{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:760px){.zonas{grid-template-columns:1fr}}.zona{border-radius:16px;padding:14px 16px;border:2px solid}.zona.l{border-color:#9FD9C4;background:var(--forjado-suave)}.zona.n{border-color:#E9C46A;background:#FFF8E6}.zona h4{margin:0 0 6px;font-family:var(--display);font-size:18px}.zona ul{margin:0;padding-left:18px;font-size:14px;line-height:1.7}
+.sec-title+.zonas,.sec-title+.journey{margin-top:14px}
+/* formularios y utilidades */
+.field input[type=text],.field input[type=number],.field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--linea);border-radius:10px;font:15px var(--texto);background:#fff;color:var(--tinta)}.field textarea{line-height:1.55;resize:vertical}.field label{display:block;font:700 13px var(--texto);color:var(--acero);margin-bottom:5px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--brasa);box-shadow:0 0 0 3px rgba(228,87,46,.18)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:760px){.grid3,.grid2{grid-template-columns:1fr}}
+.card .actions{margin-top:12px}.card h3{margin-top:0}.fa-chk{display:flex;gap:8px;align-items:center;font:500 14.5px var(--texto);cursor:pointer}
+.fa-chip{display:inline-block;font:700 11.5px var(--texto);border-radius:999px;padding:3px 10px;background:var(--linea-2);color:var(--acero)}.fa-chip.ok{background:var(--forjado-suave);color:#0B5A4E}.fa-chip.aviso{background:#FFF1D6;color:#7A4B00}.fa-chip.error{background:var(--brasa-suave);color:var(--aviso)}
+.fa-pre{white-space:pre-wrap;font:12.5px/1.5 var(--mono);background:#0B1C2E;color:#D6E4F0;border-radius:12px;padding:12px;max-height:300px;overflow:auto}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--linea);border-top-color:var(--brasa);border-radius:50%;animation:fa-s .8s linear infinite;vertical-align:-2px}@keyframes fa-s{to{transform:rotate(360deg)}}
+.fa-foot{max-width:1180px;margin:10px auto 0;padding:0 16px 110px}.fa-foot hr{border:0;border-top:1px solid var(--linea);margin:0 0 16px}.fa-foot p{margin:0;font-size:12.8px;color:#6E8299;max-width:76ch;line-height:1.55}
+.glos div{display:block;margin-bottom:12px}.glos b{display:block}
+table{border-collapse:collapse;width:100%;font-size:13.8px}th{background:var(--papel);color:var(--acero);font:700 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;text-align:left}td,th{padding:10px 12px;border-bottom:1px solid var(--linea-2);vertical-align:top}.table-wrap{overflow-x:auto}
+/* barra superior con muchos pasos: solo el actual lleva nombre (evita desbordes) */
+.tb-in{gap:10px}.stepper{min-width:0;flex:1 1 auto;justify-content:center;gap:2px}.sdot:not([data-state="now"]) .lbl{display:inline}.sdot{padding-left:4px;padding-right:4px}.sline{min-width:8px;flex:0 1 22px}.logo,.tb-tools{flex:none}
+@media(max-width:900px){.tb-btn .lbl{display:none}}@media(max-width:720px){.hero{padding:28px 20px 24px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ── UrgencIA ── */
+.u-sim{margin:4px 0 14px}
+.u-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.u-btn{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;padding:20px;border-radius:18px;background:#fff;border:2px solid var(--c);box-shadow:0 10px 26px -18px var(--c);min-height:190px;transition:transform .12s}
+.u-btn:hover{transform:translateY(-2px)}.u-btn:focus-visible{outline:3px solid var(--c);outline-offset:3px}
+.u-btn b{font-size:21px;line-height:1.15;color:var(--c)}.u-btn span:last-child{font-size:14.5px;color:#3c4656;line-height:1.45}
+.u-ico{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:var(--c);color:#fff}.u-ico .i{width:24px;height:24px}
+.u-tri{margin-top:16px}.u-tri summary{cursor:pointer;font-weight:700;padding:4px 0}.u-sug{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.u-antes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.u-ant{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;padding:18px;border-radius:16px;background:#fff;border:1px solid #dfe4ec}.u-ant:hover{border-color:#9aa6b8}.u-ant:focus-visible{outline:3px solid #2E4B6B;outline-offset:2px}.u-ant small{color:#4b5565}
+.u-encurso{display:flex;flex-wrap:wrap;align-items:center;gap:12px;border-left:6px solid var(--c);margin:18px 0}
+.u-barra{position:sticky;top:calc(64px + env(safe-area-inset-top,0px));z-index:5;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;background:var(--c,#B3203A);color:#fff;border-radius:18px;padding:14px 18px;margin:10px 0 18px;box-shadow:0 14px 30px -20px rgba(0,0,0,.6)}
+.u-bt{display:flex;align-items:center;gap:12px}.u-bt b{font-size:20px}.u-bt small{display:block;opacity:.9}.u-bt .fa-chip{background:#fff;color:#111}
+.u-bico{width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,.18);display:grid;place-items:center}.u-bico .i{width:22px;height:22px}
+.u-reloj{font-variant-numeric:tabular-nums;font-size:clamp(34px,6vw,52px);font-weight:800;letter-spacing:-.02em}
+.u-tel{background:#fff;color:#111;font-weight:800}.u-tel:hover{background:#f1f1f1}
+.u-cols{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;align-items:start}
+.u-pasos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.u-paso{display:flex;gap:14px;margin:0}.u-paso p{margin:0 0 6px;font-size:16.5px}
+.u-pn{flex:0 0 38px;height:38px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:#eef1f5;color:#2E4B6B}
+.u-crit .u-pn{background:#fde3e6;color:#9b1c31}.u-hecho{opacity:.82}.u-hecho .u-pn{background:#0B7268;color:#fff}
+.u-pt{flex:1;min-width:0}.u-acc{margin-top:8px}
+.u-dosis{display:flex;flex-direction:column;gap:2px;background:#f6f7fb;border:1px solid #dfe4ec;border-radius:12px;padding:10px 14px;margin:8px 0}
+.u-dosis b{font-size:24px;font-variant-numeric:tabular-nums}.u-dosis small{color:#4b5565}
+.u-z{max-width:220px;margin:6px 0}
+.u-cd{margin-top:8px;padding:8px 12px;border-radius:10px;background:#eef6f5;color:#075049;font-weight:600;font-variant-numeric:tabular-nums}.u-cd.u-ya{background:#fde3e6;color:#9b1c31}
+.u-f2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.u-f4{display:grid;grid-template-columns:repeat(4,1fr);gap:0 8px}
+.u-nota{display:flex;gap:8px;align-items:center}.u-nota input{flex:1;min-width:0}
+.u-log{list-style:none;margin:0 0 8px;padding:0;max-height:300px;overflow:auto;font-size:14.5px}.u-log li{padding:6px 0;border-bottom:1px solid #eef1f5}.u-log code{font-weight:700}
+.u-informe h2{margin-top:0}.u-informe h3{margin:18px 0 6px}.u-li{margin:2px 0;padding-left:14px;position:relative}.u-li::before{content:"·";position:absolute;left:2px}
+.u-sel td{background:#fff7e6}.u-carro input[type=text],.u-carro input[type=date]{width:100%;min-width:110px}.u-carro .u-q{min-width:60px;max-width:80px}.u-res{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+@media (max-width:900px){.u-cols{grid-template-columns:1fr}.u-f4{grid-template-columns:1fr 1fr}.u-barra{top:calc(56px + env(safe-area-inset-top,0px))}}
+@media (max-width:520px){.u-f2{grid-template-columns:1fr}.u-reloj{font-size:34px}}
+@media print{body *{visibility:hidden}#infDoc,#infDoc *{visibility:visible}#infDoc{position:absolute;left:0;top:0;width:100%;box-shadow:none;border:0}}
+.sdot{position:relative}.sdot .lbl{display:inline}.sdot:not([data-state="now"]) .lbl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:root{--gris:#4A6075;--brasa:#C4441E;--brasa-osc:#A93918}.sh-step{color:#4A6075}.fa-foot p{color:#4A6075}
+input[type=checkbox],input[type=radio]{min-width:22px;min-height:22px}.fa-chk{min-height:24px}
+.u-h1{font-size:clamp(26px,3.4vw,36px);margin-top:8px}.u-tri+.hero{margin-top:34px}
+</style></head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m10 8 6 4-6 4z"/></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></symbol>
+  <symbol id="i-quiz" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8M13 12h8M13 18h8"/></symbol>
+  <symbol id="i-cards" viewBox="0 0 24 24"><rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6M10 22h4"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8M10 12h4"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M17 5h4M5 17v4M3 19h4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></symbol>
+  <symbol id="i-form" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-tablet" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M6 14l1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M9 7h7M9 11h5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></symbol>
+<symbol id="i-alerta" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5h.01"/></g></symbol>
+</svg>
+<div class="topbar">
+  <div class="tb-in">
+    <button class="logo" id="goHome" type="button" aria-label="Inicio" data-i18n-attr="aria-label:Inicio"><span class="anv"><svg class="i"><use href="#i-alerta"/></svg></span><span>Urgenc<em>IA</em></span></button>
+    <nav class="stepper" id="stepper" aria-label="Pasos" data-i18n-attr="aria-label:Pasos"></nav>
+    <div class="tb-tools"><div class="tb-lang" id="langBox"><select id="selLang" class="tb-sel" aria-label="Idioma" data-i18n-attr="aria-label:Idioma"></select></div><button class="tb-btn" id="btnHelp" type="button"><svg class="i"><use href="#i-help"/></svg><span class="lbl" data-i18n="Ayuda">Ayuda</span></button></div>
+  </div>
+  <div class="progress"><span id="progBar"></span></div>
+</div>
+
+<main id="app">
+<!-- 0 · INICIO: portada con el qué, el para quién y los autores -->
+<section class="screen" data-step="0">
+<div id="enCurso"></div>
+  <h2 class="sec-title u-h1" data-i18n="u.que">¿Qué está pasando?</h2>
+  <label class="fa-chk u-sim"><input type="checkbox" id="chkSim"> <span data-i18n="u.sim">Modo simulacro: para practicar. Todo queda marcado como simulacro y no corresponde a un paciente real.</span></label>
+  <div class="u-grid" id="uGrid"></div>
+  <details class="card u-tri" id="uTri"><summary data-i18n="u.tri">No lo tengo claro: ayúdame a elegir</summary><div id="triBox"></div></details>
+  <div class="hero">
+    <p class="eyebrow" data-i18n="hero.eyebrow">Kit EstéticIA · Máster de Medicina Estética Integral y Antienvejecimiento · Universidad Miguel Hernández de Elche</p>
+    <h1 data-i18n="hero.h1">Cuando algo va mal, <em>el protocolo en pantalla</em></h1>
+    <p class="lede" data-i18n="hero.lede">Elige la urgencia y sigue los pasos: el reloj corre, cada acción queda registrada con su hora y las dosis se calculan con el peso del paciente y los valores de tu consulta. Al final, el informe de traslado está listo. Sin IA y sin conexión.</p>
+    <div class="actions"><button class="btn btn-primary btn-big" id="btnStart" type="button"><svg class="i"><use href="#i-play"/></svg><span data-i18n="s.empezar">Empezar</span></button><button class="btn btn-ghost btn-big" id="btnEjemplo" type="button"><svg class="i"><use href="#i-eye"/></svg><span data-i18n="s.ejemplo">Ver un ejemplo</span></button></div>
+    <p class="fa-inicio" id="inicioProj"></p>
+    <div class="fa-autores"><span class="fa-autores-cap" data-i18n="Realizada entre">Realizada entre</span>
+      <div class="fa-autor"><span class="fa-av" style="--c:#E4572E">FB</span><div><b>Fernando Borrás Rocher</b><small>Universidad Miguel Hernández de Elche</small><a class="fa-orcid" href="https://orcid.org/0000-0002-5519-4573" target="_blank" rel="noopener">ORCID 0000-0002-5519-4573</a></div></div><span class="fa-x">×</span>
+      <div class="fa-autor"><span class="fa-av" style="--c:#0E8C7A">EC</span><div><b>Elena Caride Miana</b><small>Dra. Caride Medicina Estética &amp; Antiaging</small><a class="fa-orcid" href="https://orcid.org/0000-0002-7620-4857" target="_blank" rel="noopener">ORCID 0000-0002-7620-4857</a></div></div>
+      <p class="fa-idea">Primera app del Kit EstéticIA, diseñado para el alumnado del Máster de Formación Permanente en Medicina Estética Integral y Antienvejecimiento (UMH).</p></div>
+  </div>
+    <h2 class="sec-title" data-i18n="u.antes">Antes de que pase</h2>
+  <div class="u-antes" id="uAntes"></div>
+  <h2 class="sec-title" data-i18n="Dónde va cada cosa">Dónde va cada cosa</h2>
+  <div class="zonas"><div class="zona l"><h4 data-i18n="Siempre en tu ordenador">Siempre en tu ordenador</h4><ul data-i18n="s.zl">
+<li>Las urgencias, el registro y los informes, guardados en este navegador</li><li>El carro de urgencias y los valores del protocolo de tu consulta</li><li>Nada sale hacia ningún servidor: la app no usa IA ni conexión</li></ul></div></div>
+</section>
+
+<!-- 1 · URGENCIA EN CURSO -->
+<section class="screen" data-step="1">
+  <div class="u-barra" id="uBarra"></div>
+  <div id="uBox"></div>
+</section>
+
+<!-- 2 · INFORME -->
+<section class="screen" data-step="2">
+  <header class="sh" style="--c:#0E8C7A"><div class="sh-ico"><svg class="i"><use href="#i-doc"/></svg></div><div><p class="sh-step" data-i18n="Paso 2 de 4">Paso 2 de 4</p><h2 data-i18n="Informe de traslado">Informe de traslado</h2><p class="sh-lede" data-i18n="s.inf.lede">Se genera con lo que has registrado. Completa la situación al traslado o al alta, revísalo y descárgalo, imprímelo o cópialo.</p></div></header>
+  <div id="infBox"></div>
+</section>
+
+<!-- 3 · CARRO -->
+<section class="screen" data-step="3">
+  <header class="sh" style="--c:#C98200"><div class="sh-ico"><svg class="i"><use href="#i-archive"/></svg></div><div><p class="sh-step" data-i18n="Paso 3 de 4">Paso 3 de 4</p><h2 data-i18n="Carro de urgencias">Carro de urgencias</h2><p class="sh-lede" data-i18n="s.car.lede">Anota la fecha de caducidad de cada elemento y registra una revisión cada mes. Lo caducado y lo que caduca en menos de 30 días se marca.</p></div></header>
+  <div id="carBox"></div>
+</section>
+
+<!-- 4 · PROTOCOLOS -->
+<section class="screen" data-step="4">
+  <header class="sh" style="--c:#2E4B6B"><div class="sh-ico"><svg class="i"><use href="#i-sliders"/></svg></div><div><p class="sh-step" data-i18n="Paso 4 de 4">Paso 4 de 4</p><h2 data-i18n="Protocolos de tu consulta">Protocolos de tu consulta</h2><p class="sh-lede" data-i18n="s.pro.lede">Los valores de las dosis vienen de las fuentes publicadas que se citan. Ajústalos al protocolo escrito de tu consulta y a tus productos.</p></div></header>
+  <div id="proBox"></div>
+</section>
+</main>
+
+<footer class="fa-foot"><hr><p><b>UrgencIA</b> · Fernando Borrás Rocher · Elena Caride Miana · Universidad Miguel Hernández de Elche; Dra. Caride Medicina Estética & Antiaging. <span data-i18n="f.pie">Herramienta de apoyo para médicos: no sustituye al protocolo escrito de tu consulta, a las fichas técnicas ni al juicio clínico. Tus datos se guardan solo en este navegador.</span></p></footer>
+<div class="bottomnav"><div class="bn-in"><button class="btn btn-ghost" id="navBack" type="button"><svg class="i"><use href="#i-left"/></svg><span data-i18n="Atrás">Atrás</span></button><div class="bn-hint" id="navHint"></div><button class="btn btn-primary" id="navNext" type="button"><span id="navNextTxt">Siguiente</span><svg class="i"><use href="#i-right"/></svg></button></div></div>
+
+
+<div class="modal" id="mHelp" role="dialog" aria-modal="true" aria-labelledby="mHelpT"><div class="modal-box"><div class="modal-head"><h2 id="mHelpT" data-i18n="Ayuda">Ayuda</h2><button type="button" data-close data-i18n="Cerrar">Cerrar</button></div><div class="modal-body"><div class="glos" id="glos"></div></div></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>const APP="urgencia";const APP_NAME="UrgencIA";const LOGO_ICON="alerta";const LANGS_ON=["es", "en", "pt"];
+"use strict";
+/* ── utilidades comunes (todas las apps Forja) ──────────────────────────────
+   Requiere que la app defina antes:  const APP = 'miapp';  (prefijo de almacenamiento)  */
+const $ = id => document.getElementById(id), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ico = n => `<svg class="i"><use href="#i-${n}"/></svg>`;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const uid = (p = '') => p + Math.random().toString(36).slice(2, 8);
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+const wc = s => (String(s || '').trim().match(/[\p{L}\p{N}]+/gu) || []).length;
+const chunk = (a, n) => { const o = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o; };
+const nf = n => Math.round(n).toLocaleString(typeof locale === 'function' ? locale() : 'es-ES');
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`;
+const slug = s => norm(s).replace(/ /g, '_').slice(0, 40) || 'x';
+function toast(m, ms = 4200) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('on'), ms); }
+function dl(nombre, contenido, tipo) { const b = contenido instanceof Blob ? contenido : new Blob([contenido], {type: tipo}); const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 2500); }
+
+/* librerías externas (solo para LEER ficheros: Word, PDF, PowerPoint). Escribir Word/ZIP no necesita ninguna (70-report).
+   Cada librería tiene un espejo: si cdnjs falla (URL retirada, bloqueador, proxy), se prueba jsDelivr con la misma versión.
+   La CSP de build.py admite los dos orígenes. Las URLs están comprobadas contra el paquete npm de esa versión. */
+const LIB = {
+  mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js',
+  jszip: 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',
+  pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  pdfw: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
+  docx: 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js'   // obsoleto: usa wordDeMarkdown / wordDeXml (sin red)
+};
+const LIB_ESPEJO = {
+  [LIB.mammoth]: 'https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js',
+  [LIB.jszip]: 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js',
+  [LIB.pdf]: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+  [LIB.pdfw]: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+};
+const LIB_GLOBAL = {[LIB.mammoth]: 'mammoth', [LIB.jszip]: 'JSZip', [LIB.pdf]: 'pdfjsLib', [LIB.docx]: 'docx'};
+const _libNombre = u => (u.match(/\/(?:libs|npm)\/([^/@]+)/) || [, 'externa'])[1];
+const _cargaScript = u => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = u; const tm = setTimeout(() => { s.remove(); ko(); }, 20000); s.onload = () => { clearTimeout(tm); ok(); }; s.onerror = () => { clearTimeout(tm); s.remove(); ko(); }; document.head.appendChild(s); });
+const _libCargadas = {};
+/* cargaLib([LIB.x, …]) carga en orden; cada una prueba cdnjs y luego su espejo; no recarga lo ya cargado */
+async function cargaLib(urls) {
+  for (const u of urls) {
+    const g = LIB_GLOBAL[u]; if ((g && window[g]) || _libCargadas[u]) continue;
+    let hecho = false, v_ok = u;
+    for (const v of [u, LIB_ESPEJO[u]].filter(Boolean)) { try { await _cargaScript(v); hecho = true; v_ok = v; break; } catch {} }
+    if (!hecho) throw new Error(navigator.onLine === false ? t('Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.') : t('No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.', _libNombre(u)));
+    _libCargadas[u] = v_ok;
+  }
+}
+
+/* huella SHA-256 (con alternativa para file:// sin contexto seguro) y canonización estable */
+const canon = v => v === null || typeof v !== 'object' ? JSON.stringify(v) : Array.isArray(v) ? '[' + v.map(canon).join(',') + ']' : '{' + Object.keys(v).filter(k => v[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(v[k])).join(',') + '}';
+function sha256js(bytes) {
+  const pr = []; for (let n = 2; pr.length < 64; n++) if (pr.every(p => n % p)) pr.push(n);
+  const fr = x => Math.floor((x - Math.floor(x)) * 4294967296), K = pr.map(p => fr(Math.cbrt(p))), H = pr.slice(0, 8).map(p => fr(Math.sqrt(p)));
+  const l = bytes.length, pad = new Uint8Array(((l + 9 + 63) >> 6) << 6); pad.set(bytes); pad[l] = 0x80;
+  const dv = new DataView(pad.buffer); dv.setUint32(pad.length - 8, Math.floor(l * 8 / 4294967296)); dv.setUint32(pad.length - 4, (l * 8) >>> 0);
+  const rr = (x, n) => (x >>> n) | (x << (32 - n)), W = new Uint32Array(64);
+  for (let i = 0; i < pad.length; i += 64) {
+    for (let t = 0; t < 16; t++) W[t] = dv.getUint32(i + t * 4);
+    for (let t = 16; t < 64; t++) { const s0 = rr(W[t - 15], 7) ^ rr(W[t - 15], 18) ^ (W[t - 15] >>> 3), s1 = rr(W[t - 2], 17) ^ rr(W[t - 2], 19) ^ (W[t - 2] >>> 10); W[t] = (W[t - 16] + s0 + W[t - 7] + s1) >>> 0; }
+    let [a, b, c, d, e, f, g, hh] = H;
+    for (let t = 0; t < 64; t++) { const S1 = rr(e, 6) ^ rr(e, 11) ^ rr(e, 25), ch = (e & f) ^ (~e & g), t1 = (hh + S1 + ch + K[t] + W[t]) >>> 0, S0 = rr(a, 2) ^ rr(a, 13) ^ rr(a, 22), mj = (a & b) ^ (a & c) ^ (b & c), t2 = (S0 + mj) >>> 0; hh = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0; }
+    [a, b, c, d, e, f, g, hh].forEach((v, j) => H[j] = (H[j] + v) >>> 0);
+  }
+  return H.map(v => v.toString(16).padStart(8, '0')).join('');
+}
+async function sha256(str) {
+  const b = new TextEncoder().encode(str);
+  if (window.crypto?.subtle) { try { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', b))].map(x => x.toString(16).padStart(2, '0')).join(''); } catch {} }
+  return sha256js(b);
+}
+
+/* ── persistencia local (IndexedDB). La app define:  let S = {...};  y opcionalmente  const KEYP = () => 'main';  ── */
+const dbP = new Promise((ok, ko) => { const r = indexedDB.open(APP, 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); });
+const kv = async (mode, fn) => { const d = await dbP; return new Promise((ok, ko) => { const tx = d.transaction('kv', mode), q = fn(tx.objectStore('kv')); tx.oncomplete = () => ok(q && q.result); tx.onerror = () => ko(tx.error); }); };
+const _key = () => (typeof KEYP === 'function' ? KEYP() : 'main');
+let _g;
+function guarda() { clearTimeout(_g); _g = setTimeout(() => kv('readwrite', s => s.put(S, _key())).catch(() => toast(t('No se pudo guardar en el navegador (¿demasiado material?)'))), 500); }
+/* guardado inmediato: úsalo justo después de pagar una llamada a la IA, para no perder el resultado si se cierra la pestaña */
+const guardaYa = () => { clearTimeout(_g); return kv('readwrite', s => s.put(S, _key())).catch(() => toast(t('No se pudo guardar en el navegador'))); };
+window.addEventListener('pagehide', () => { clearTimeout(_g); try { kv('readwrite', s => s.put(S, _key())); } catch {} });
+async function cargaEstado(key = _key()) { try { const p = await kv('readonly', s => s.get(key)); return p || null; } catch { return null; } }
+
+/* ── navegación Forja: barra superior, stepper, barra inferior, ventanas, ayuda y ajustes de IA ─────────────
+   La app define (en app.js; se leen al ejecutar, no al cargar el módulo) y llama a iniciaUI() al arrancar:
+     const STEPS  = ['Inicio', 'Paso 1', ...];                   // etiquetas del stepper (la actual se muestra con nombre)
+     const NAV    = [['Empezar',''], ['Siguiente: …','pista'], …]; // [texto del botón «siguiente», pista de la barra inferior] por pantalla
+     const RENDER = {0: pintaInicio, 1: pintaX, …};               // funciones que pintan cada pantalla al entrar
+     const GLOS   = [['Título','Texto'], …];                       // ayuda
+   Idiomas: STEPS, NAV, GLOS y HUBS se escriben en español y se traducen con t() (módulo 65-i18n; diccionario I18N en src/i18n.js).
+   Opcionales:  const CAN_NEXT = i => true|'mensaje';  // validación antes de avanzar
+                const HUBS = ['Glosario', 'Progreso'];  // secciones fuera del recorrido lineal: pantallas con data-step = STEPS.length + k.
+                // Al entrar en una sección el stepper muestra solo su nombre, la barra de progreso se vacía y «Atrás»/«Siguiente» vuelven al inicio. */
+let step = 0;
+const esHub = i => i >= STEPS.length;
+function buildStepper() {
+  if (esHub(step)) {
+    const nombre = (typeof HUBS !== 'undefined' && HUBS[step - STEPS.length]) || '';
+    $('stepper').innerHTML = `<button class="sdot" type="button" data-go="0" data-state="done"><span class="n">${ico('left')}</span><span class="lbl">${esc(t('Inicio'))}</span></button><span class="sline on"></span><button class="sdot" type="button" data-state="now" aria-current="page"><span class="n">${ico(typeof LOGO_ICON === 'string' ? LOGO_ICON : 'bulb')}</span><span class="lbl">${esc(t(nombre))}</span></button>`;
+    $$('#stepper [data-go]').forEach(b => b.onclick = () => go(+b.dataset.go)); return;
+  }
+  $('stepper').innerHTML = STEPS.map((s, i) => `${i ? `<span class="sline${i <= step ? ' on' : ''}"></span>` : ''}<button class="sdot" type="button" data-go="${i}" data-state="${i < step ? 'done' : i === step ? 'now' : ''}" ${i === step ? 'aria-current="step"' : ''}><span class="n">${i < step ? ico('check') : i === 0 ? ico(typeof LOGO_ICON === 'string' ? LOGO_ICON : 'bulb') : i}</span><span class="lbl">${esc(t(s))}</span></button>`).join('');
+  $$('#stepper [data-go]').forEach(b => b.onclick = () => go(+b.dataset.go));
+}
+function updateNav() { const N = NAV[step] || ['Volver al inicio', '']; $('navBack').classList.toggle('hidden', step === 0 || esHub(step)); $('navNextTxt').textContent = t(N[0]); $('navHint').textContent = N[1] ? t(N[1]) : ''; }
+function go(i) {
+  step = i; $$('.screen').forEach(s => s.classList.toggle('on', +s.dataset.step === i)); $('progBar').style.width = esHub(i) ? '0%' : (i / (STEPS.length - 1) * 100) + '%';
+  (RENDER[i] || (() => {}))(); buildStepper(); updateNav(); window.scrollTo({top: 0, behavior: 'instant'});
+}
+$('goHome').onclick = () => go(0);
+$('navBack').onclick = () => { if (step > 0) go(step - 1); };
+$('navNext').onclick = () => { if (esHub(step)) return go(0); const ok = typeof CAN_NEXT === 'function' ? CAN_NEXT(step) : true; if (ok !== true && ok) return toast(ok); go(step === STEPS.length - 1 ? 0 : step + 1); };
+
+/* ventanas modales (Escape y clic fuera cierran; data-close en el botón) */
+const _cierres = {};   // id de modal → función a ejecutar al cerrar
+$$('.modal').forEach(m => m.addEventListener('click', ev => { if (ev.target === m || ev.target.hasAttribute('data-close')) { m.classList.remove('on'); _cierres[m.id]?.(); } }));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $$('.modal.on').forEach(m => { m.classList.remove('on'); _cierres[m.id]?.(); }); });
+/* Ajustes de IA. El modelo se elige en un <select> (no en <input list>: un <datalist> con el campo ya relleno solo muestra
+   las opciones que coinciden con lo escrito, y la lista «no se carga» a ojos de la persona). «Otro modelo…» abre un campo libre. */
+const OTRO_MODELO = '__otro';
+function pintaModelos(pv = getProv()) {
+  const sel = $('selModelo'); if (!sel) return;
+  let ml = []; try { ml = JSON.parse(localStorage.getItem(APP + '_models_' + pv) || '[]'); } catch {}
+  const act = getMod(pv), lista = [...new Set([act, ...ml, PROV[pv].m])].filter(Boolean);
+  sel.innerHTML = lista.map(m => `<option value="${esc(m)}">${esc(m)}${m === act ? ' · ' + esc(t('actual')) : ''}${ml.length && !ml.includes(m) ? ' · ' + esc(t('no aparece en tu clave')) : ''}</option>`).join('')
+    + `<option value="${OTRO_MODELO}">${esc(t('Otro modelo (escribirlo)…'))}</option>`;
+  sel.value = act; $('modelo').value = act; $('modelo').hidden = true;
+}
+function cargaIA() { const pv = getProv(); $('selProv').value = pv; $('apiKey').value = getKey(pv); $('apiKey').placeholder = KPH[pv]; pintaModelos(pv); }
+/* pide a la API del proveedor los modelos de ESA clave y los pone en el desplegable (silencio: sin mensaje si falta la clave) */
+async function cargaModelos(silencio = false) {
+  const st = $('iaEstado'), pv = getProv();
+  if (!getKey(pv)) { if (!silencio) st.textContent = t('Primero pega tu clave.'); return []; }
+  st.textContent = t('Cargando los modelos de tu clave…');
+  try {
+    const l = await listaModelos(pv); if (pv !== getProv()) return l;
+    localStorage.setItem(APP + '_models_' + pv, JSON.stringify(l)); pintaModelos(pv);
+    st.textContent = l.length ? t('{0} modelos disponibles en tu clave: elígelo en el desplegable.', l.length) : t('Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».');
+    return l;
+  } catch (e) { st.textContent = e.message; return []; }
+}
+const KPH = {openai: 'sk-proj-…', gemini: 'AIza…', anthropic: 'sk-ant-…'};
+/* iniciaUI(): llámala UNA vez desde app.js, al final, justo antes de go(0). Enlaza la ayuda y los ajustes de IA.
+   (No se hace al cargar el módulo porque GLOS y el resto de constantes de la app aún no existen en ese momento.) */
+function iniciaUI() {
+  if (typeof initI18n === 'function') initI18n();
+  window.addEventListener('langchange', () => { if ($('btnHelp')) $('glos').innerHTML = (typeof GLOS !== 'undefined' ? GLOS : []).map(g => `<div><b>${esc(t(g[0]))}</b><span>${esc(t(g[1]))}</span></div>`).join(''); (RENDER[step] || (() => {}))(); buildStepper(); updateNav(); if ($('mIA') && $('mIA').classList.contains('on')) cargaIA(); });
+  if ($('btnHelp')) { $('glos').innerHTML = (typeof GLOS !== 'undefined' ? GLOS : []).map(g => `<div><b>${esc(t(g[0]))}</b><span>${esc(t(g[1]))}</span></div>`).join(''); $('btnHelp').onclick = () => $('mHelp').classList.add('on'); }
+  if ($('btnIA')) {
+    const sinLista = () => { try { return !JSON.parse(localStorage.getItem(APP + '_models_' + getProv()) || '[]').length; } catch { return true; } };
+    $('selProv').onchange = () => { localStorage.setItem(APP + '_prov', $('selProv').value); cargaIA(); if (getKey() && sinLista()) cargaModelos(true); };
+    let _kt; $('apiKey').oninput = () => { const pv = getProv(); localStorage.setItem(PROV[pv].k, $('apiKey').value.trim()); localStorage.removeItem(APP + '_models_' + pv); clearTimeout(_kt); _kt = setTimeout(() => { if ($('apiKey').value.trim().length >= 20) cargaModelos(true); }, 900); };
+    $('selModelo').onchange = () => { const v = $('selModelo').value; if (v === OTRO_MODELO) { $('modelo').hidden = false; $('modelo').value = ''; $('modelo').focus(); return; } $('modelo').hidden = true; localStorage.setItem(APP + '_model_' + getProv(), v); };
+    $('modelo').oninput = () => localStorage.setItem(APP + '_model_' + getProv(), $('modelo').value.trim() || PROV[getProv()].m);
+    $('modelo').onchange = () => pintaModelos();
+    $('btnEye').onclick = () => { const k = $('apiKey'); k.type = k.type === 'password' ? 'text' : 'password'; };
+    $('btnModelos').onclick = () => cargaModelos(false);
+    $('btnIA').onclick = () => { cargaIA(); $('mIA').classList.add('on'); if (getKey() && sinLista()) cargaModelos(true); };
+  }
+}
+/* ¿hay clave? si no, abre los ajustes de IA y avisa */
+function pideClave() { if (getKey()) return true; if ($('mIA')) { cargaIA(); $('mIA').classList.add('on'); } toast(t('Pega tu clave de IA para continuar')); return false; }
+
+/* ── idiomas: español (por defecto), inglés y portugués; opcionales: català, euskara y galego (app.json → langs) ─────────────────────────────────────────────────
+   El español es el idioma de origen: está escrito en el HTML y en el JS. Las demás lenguas se traducen con diccionarios.
+   Dos formas de marcar texto traducible (una sola función, t(), y un diccionario por idioma):
+     · HTML estático:   <span data-i18n="clave">Texto en español</span>
+                        <input data-i18n-attr="placeholder:clave;aria-label:otra" placeholder="…">
+       En español se conserva el texto del HTML; en los demás idiomas se sustituye por I18N[lang][clave] (HTML de confianza: nunca metas
+       datos de la persona en el diccionario). Envuelve en <span> solo el texto, no los iconos ni los botones enteros.
+     · JavaScript:      t('Texto en español con {0} huecos', valor)   → la propia frase en español es la clave (estilo gettext)
+                        t('msg.clave')                                → clave corta; su texto en español va en I18N.es['msg.clave']
+   La app define (en src/i18n.js, se lee al ejecutar):   const I18N = {en: {…}, pt: {…}, es: {…solo claves cortas…}};
+   Este módulo trae I18N_BASE con todo lo que ponen los módulos de Forja (errores de IA, ajustes, avisos); la app puede sobrescribirlo.
+   build.py inyecta  const LANGS_ON = ["es","en","pt"]  desde app.json → langs  (con un solo idioma el selector no se muestra).
+   Reglas que evitan fallos reales:
+     · Guarda DATOS en el estado, no frases ya traducidas; traduce al pintar (si no, al cambiar de idioma quedan frases viejas).
+     · Cada pantalla se repinta al cambiar de idioma (evento «langchange» → RENDER[step]).
+     · A la IA se le pide el idioma con INSTR_IDIOMA(); las citas literales del material se copian en su idioma original. */
+const LANGS = {es: 'Español', ca: 'Català', eu: 'Euskara', gl: 'Galego', en: 'English', pt: 'Português'};   // ca, eu y gl: opcionales (lenguas cooficiales de España)
+const IA_LANG = {es: 'español', ca: 'català', eu: 'euskara (vasco)', gl: 'galego (gallego)', en: 'English', pt: 'português'};   // cómo se le nombra el idioma a la IA
+const LOCALE = {es: 'es-ES', ca: 'ca-ES', eu: 'eu-ES', gl: 'gl-ES', en: 'en-GB', pt: 'pt-PT'};            // formatos de número y fecha
+const langsOn = () => (typeof LANGS_ON !== 'undefined' ? LANGS_ON : ['es', 'en', 'pt']).filter(l => LANGS[l]);
+let LANG = 'es', _D = null;
+const locale = () => LOCALE[LANG] || 'es-ES';
+const langIA = () => IA_LANG[LANG] || 'español';
+/* frase para añadir a CADA prompt cuya respuesta ve la persona: la IA escribe en su idioma, pero ids, claves JSON y citas literales no se tocan */
+const INSTR_IDIOMA = () => `Escribe todos los textos de tu respuesta (los valores de los campos JSON) en ${langIA()}. No traduzcas los nombres de las claves JSON, los identificadores ni las citas literales del material: cópialas en su idioma original, sin cambiar nada.`;
+
+const I18N_BASE = {
+  en: {
+    'Inicio': 'Home', 'Ayuda': 'Help', 'IA': 'AI', 'Pasos': 'Steps', 'Atrás': 'Back', 'Siguiente': 'Next', 'Cerrar': 'Close', 'Cancelar': 'Cancel', 'Idioma': 'Language',
+    'Volver al inicio': 'Back to the start', 'Inteligencia artificial': 'Artificial intelligence', 'Proveedor': 'Provider', 'Tu clave de API': 'Your API key', 'Ver': 'Show', 'Modelo': 'Model',
+    'Ver los modelos de mi clave': 'Show the models available for my key',
+    'f.ia.ayuda': 'The key is stored only in this browser and sent only to your provider. Each person uses their own key and pays for their own use. Choose an inexpensive model: this use does not need the most powerful one.',
+    'Esto es lo que saldría hacia tu proveedor de IA': 'This is what would be sent to your AI provider',
+    'f.envio.chk': 'I have reviewed the sample and confirm that it may leave my computer.',
+    'Muestra del envío:': 'Sample of what is sent:', 'Realizada entre': 'Created by', 'Realizada por': 'Created by',
+    'Cómo funciona': 'How it works', 'Dónde va cada cosa': 'Where everything goes',
+    'Siempre en tu ordenador': 'Always on your computer', 'Sale hacia tu proveedor de IA': 'Sent to your AI provider',
+    'No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.': "Could not load the {0} library. A content blocker or your institution's network may be preventing it; try another network or disable the blocker on this page.",
+    'Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.': "Offline: an internet connection is needed to open this type of file the first time.",
+    'No se pudo guardar en el navegador (¿demasiado material?)': 'Could not save in the browser (too much material?)', 'No se pudo guardar en el navegador': 'Could not save in the browser',
+    '{0} no reconoce tu clave. Revísala en el botón «IA».': '{0} does not recognise your key. Check it with the “AI” button.',
+    'Tu clave no tiene acceso al modelo «{0}». Elige otro en el botón «IA».': 'Your key has no access to the model “{0}”. Choose another one with the “AI” button.',
+    'Tu cuenta de {0} no tiene saldo o ha alcanzado su límite.': 'Your {0} account has no balance or has reached its limit.',
+    'El modelo «{0}» no admite imágenes. Elige uno con visión.': 'The model “{0}” does not accept images. Choose one with vision.',
+    'No hay conexión con {0}.': 'No connection to {0}.', '{0} no responde ahora mismo. Inténtalo de nuevo en un momento.': '{0} is not responding right now. Please try again in a moment.',
+    'Falta tu clave de IA. Pulsa el botón «IA», arriba.': 'Your AI key is missing. Press the “AI” button at the top.', 'OpenAI no responde ahora mismo.': 'OpenAI is not responding right now.',
+    'El proveedor ha bloqueado la respuesta ({0}).': 'The provider blocked the response ({0}).',
+    'La IA no devolvió una respuesta con el formato esperado. Inténtalo de nuevo.': 'The AI did not return a response in the expected format. Please try again.',
+    'Primero pega tu clave.': 'Paste your key first.', '{0} modelos disponibles en tu clave; escribe o elige uno.': '{0} models available for your key; type or choose one.',
+    'Pega tu clave de IA para continuar': 'Paste your AI key to continue',
+    'El PowerPoint no tiene diapositivas': 'The PowerPoint has no slides', 'Formato no admitido (usa Word, PDF, PowerPoint, texto, imágenes, audio o vídeo)': 'Unsupported format (use Word, PDF, PowerPoint, text, images, audio or video)',
+    '«{0}» pesa más de 600 MB: exporta solo el audio (MP3 o WAV) y súbelo en su lugar.': '“{0}” is larger than 600 MB: export only the audio (MP3 or WAV) and upload that instead.',
+    'No se pudo leer el audio de «{0}». Prueba a exportarlo como MP3 o WAV.': 'Could not read the audio of “{0}”. Try exporting it as MP3 or WAV.',
+    'Para transcribir necesitas una clave de OpenAI o de Gemini (Claude no transcribe audio). Añádela en el botón «IA».': 'To transcribe you need an OpenAI or Gemini key (Claude does not transcribe audio). Add it with the “AI” button.',
+    'actual': "current",
+    'no aparece en tu clave': "not available for your key",
+    'Otro modelo (escribirlo)…': "Another model (type it)…",
+    'Escribe el nombre exacto del modelo': "Type the exact model name",
+    'Cargando los modelos de tu clave…': "Loading the models for your key…",
+    '{0} modelos disponibles en tu clave: elígelo en el desplegable.': "{0} models available for your key: choose one from the drop-down list.",
+    'Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».': "Your key returned no text models. Type the name with “Another model”."
+  },
+  pt: {
+    'Inicio': 'Início', 'Ayuda': 'Ajuda', 'IA': 'IA', 'Pasos': 'Passos', 'Atrás': 'Voltar', 'Siguiente': 'Seguinte', 'Cerrar': 'Fechar', 'Cancelar': 'Cancelar', 'Idioma': 'Idioma',
+    'Volver al inicio': 'Voltar ao início', 'Inteligencia artificial': 'Inteligência artificial', 'Proveedor': 'Fornecedor', 'Tu clave de API': 'A sua chave de API', 'Ver': 'Mostrar', 'Modelo': 'Modelo',
+    'Ver los modelos de mi clave': 'Ver os modelos disponíveis na minha chave',
+    'f.ia.ayuda': 'A chave é guardada apenas neste navegador e enviada apenas ao seu fornecedor. Cada pessoa usa a sua própria chave e paga a sua utilização. Escolha um modelo económico: esta utilização não precisa do mais potente.',
+    'Esto es lo que saldría hacia tu proveedor de IA': 'Isto é o que seria enviado ao seu fornecedor de IA',
+    'f.envio.chk': 'Revi a amostra e confirmo que pode sair do meu computador.',
+    'Muestra del envío:': 'Amostra do que é enviado:', 'Realizada entre': 'Realizada por', 'Realizada por': 'Realizada por',
+    'Cómo funciona': 'Como funciona', 'Dónde va cada cosa': 'Para onde vai cada coisa',
+    'Siempre en tu ordenador': 'Sempre no seu computador', 'Sale hacia tu proveedor de IA': 'Enviado ao seu fornecedor de IA',
+    'No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.': "Não foi possível carregar a biblioteca {0}. Um bloqueador ou a rede da sua instituição pode estar a impedi-la; experimente outra rede ou desative o bloqueador nesta página.",
+    'Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.': "Sem ligação: é preciso internet para abrir este tipo de ficheiro pela primeira vez.",
+    'No se pudo guardar en el navegador (¿demasiado material?)': 'Não foi possível guardar no navegador (demasiado material?)', 'No se pudo guardar en el navegador': 'Não foi possível guardar no navegador',
+    '{0} no reconoce tu clave. Revísala en el botón «IA».': '{0} não reconhece a sua chave. Verifique-a no botão «IA».',
+    'Tu clave no tiene acceso al modelo «{0}». Elige otro en el botón «IA».': 'A sua chave não tem acesso ao modelo «{0}». Escolha outro no botão «IA».',
+    'Tu cuenta de {0} no tiene saldo o ha alcanzado su límite.': 'A sua conta {0} não tem saldo ou atingiu o limite.',
+    'El modelo «{0}» no admite imágenes. Elige uno con visión.': 'O modelo «{0}» não aceita imagens. Escolha um com visão.',
+    'No hay conexión con {0}.': 'Sem ligação a {0}.', '{0} no responde ahora mismo. Inténtalo de nuevo en un momento.': '{0} não está a responder neste momento. Tente novamente daqui a pouco.',
+    'Falta tu clave de IA. Pulsa el botón «IA», arriba.': 'Falta a sua chave de IA. Prima o botão «IA», em cima.', 'OpenAI no responde ahora mismo.': 'A OpenAI não está a responder neste momento.',
+    'El proveedor ha bloqueado la respuesta ({0}).': 'O fornecedor bloqueou a resposta ({0}).',
+    'La IA no devolvió una respuesta con el formato esperado. Inténtalo de nuevo.': 'A IA não devolveu uma resposta no formato esperado. Tente novamente.',
+    'Primero pega tu clave.': 'Cole primeiro a sua chave.', '{0} modelos disponibles en tu clave; escribe o elige uno.': '{0} modelos disponíveis na sua chave; escreva ou escolha um.',
+    'Pega tu clave de IA para continuar': 'Cole a sua chave de IA para continuar',
+    'El PowerPoint no tiene diapositivas': 'O PowerPoint não tem diapositivos', 'Formato no admitido (usa Word, PDF, PowerPoint, texto, imágenes, audio o vídeo)': 'Formato não suportado (use Word, PDF, PowerPoint, texto, imagens, áudio ou vídeo)',
+    '«{0}» pesa más de 600 MB: exporta solo el audio (MP3 o WAV) y súbelo en su lugar.': '«{0}» tem mais de 600 MB: exporte apenas o áudio (MP3 ou WAV) e carregue-o em vez disso.',
+    'No se pudo leer el audio de «{0}». Prueba a exportarlo como MP3 o WAV.': 'Não foi possível ler o áudio de «{0}». Tente exportá-lo como MP3 ou WAV.',
+    'Para transcribir necesitas una clave de OpenAI o de Gemini (Claude no transcribe audio). Añádela en el botón «IA».': 'Para transcrever precisa de uma chave da OpenAI ou do Gemini (o Claude não transcreve áudio). Adicione-a no botão «IA».',
+    'actual': "atual",
+    'no aparece en tu clave': "não aparece na sua chave",
+    'Otro modelo (escribirlo)…': "Outro modelo (escrevê-lo)…",
+    'Escribe el nombre exacto del modelo': "Escreva o nome exato do modelo",
+    'Cargando los modelos de tu clave…': "A carregar os modelos da sua chave…",
+    '{0} modelos disponibles en tu clave: elígelo en el desplegable.': "{0} modelos disponíveis na sua chave: escolha-o na lista pendente.",
+    'Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».': "A sua chave não devolveu nenhum modelo de texto. Escreva o nome com «Outro modelo»."
+  },
+  ca: {
+    'Inicio': "Inici",
+    'Ayuda': "Ajuda",
+    'IA': "IA",
+    'Pasos': "Passos",
+    'Atrás': "Enrere",
+    'Siguiente': "Següent",
+    'Cerrar': "Tancar",
+    'Cancelar': "Cancel·lar",
+    'Idioma': "Idioma",
+    'Volver al inicio': "Tornar a l’inici",
+    'Inteligencia artificial': "Intel·ligència artificial",
+    'Proveedor': "Proveïdor",
+    'Tu clave de API': "La teva clau d’API",
+    'Ver': "Veure",
+    'Modelo': "Model",
+    'Ver los modelos de mi clave': "Veure els models de la meva clau",
+    'f.ia.ayuda': "La clau es desa només en aquest navegador i s’envia únicament al teu proveïdor. Cada persona fa servir la seva i paga el seu ús. Tria un model econòmic: aquest ús no necessita el més potent.",
+    'Esto es lo que saldría hacia tu proveedor de IA': "Això és el que sortiria cap al teu proveïdor d’IA",
+    'f.envio.chk': "He revisat la mostra i confirmo que pot sortir del meu ordinador.",
+    'Muestra del envío:': "Mostra de l’enviament:",
+    'Realizada entre': "Realitzada per",
+    'Realizada por': "Realitzada per",
+    'Cómo funciona': "Com funciona",
+    'Dónde va cada cosa': "On va cada cosa",
+    'Siempre en tu ordenador': "Sempre al teu ordinador",
+    'Sale hacia tu proveedor de IA': "Surt cap al teu proveïdor d’IA",
+    'No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.': "No s’ha pogut carregar la biblioteca {0}. Potser un bloquejador o la xarxa de la teua institució ho impedeix; prova una altra xarxa o desactiva el bloquejador en aquesta pàgina.",
+    'Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.': "Sense connexió: cal internet per a obrir aquest tipus de fitxer la primera vegada.",
+    'No se pudo guardar en el navegador (¿demasiado material?)': "No s’ha pogut desar al navegador (massa material?)",
+    'No se pudo guardar en el navegador': "No s’ha pogut desar al navegador",
+    '{0} no reconoce tu clave. Revísala en el botón «IA».': "{0} no reconeix la teva clau. Revisa-la al botó «IA».",
+    'Tu clave no tiene acceso al modelo «{0}». Elige otro en el botón «IA».': "La teva clau no té accés al model «{0}». Tria’n un altre al botó «IA».",
+    'Tu cuenta de {0} no tiene saldo o ha alcanzado su límite.': "El teu compte de {0} no té saldo o ha arribat al límit.",
+    'El modelo «{0}» no admite imágenes. Elige uno con visión.': "El model «{0}» no admet imatges. Tria’n un amb visió.",
+    'No hay conexión con {0}.': "No hi ha connexió amb {0}.",
+    '{0} no responde ahora mismo. Inténtalo de nuevo en un momento.': "{0} no respon ara mateix. Torna-ho a provar d’aquí a un moment.",
+    'Falta tu clave de IA. Pulsa el botón «IA», arriba.': "Falta la teva clau d’IA. Prem el botó «IA», a dalt.",
+    'OpenAI no responde ahora mismo.': "OpenAI no respon ara mateix.",
+    'El proveedor ha bloqueado la respuesta ({0}).': "El proveïdor ha bloquejat la resposta ({0}).",
+    'La IA no devolvió una respuesta con el formato esperado. Inténtalo de nuevo.': "La IA no ha retornat una resposta amb el format esperat. Torna-ho a provar.",
+    'Primero pega tu clave.': "Primer enganxa la teva clau.",
+    '{0} modelos disponibles en tu clave; escribe o elige uno.': "{0} models disponibles amb la teva clau; escriu-ne o tria’n un.",
+    'Pega tu clave de IA para continuar': "Enganxa la teva clau d’IA per continuar",
+    'El PowerPoint no tiene diapositivas': "El PowerPoint no té diapositives",
+    'Formato no admitido (usa Word, PDF, PowerPoint, texto, imágenes, audio o vídeo)': "Format no admès (fes servir Word, PDF, PowerPoint, text, imatges, àudio o vídeo)",
+    '«{0}» pesa más de 600 MB: exporta solo el audio (MP3 o WAV) y súbelo en su lugar.': "«{0}» pesa més de 600 MB: exporta només l’àudio (MP3 o WAV) i puja’l en lloc seu.",
+    'No se pudo leer el audio de «{0}». Prueba a exportarlo como MP3 o WAV.': "No s’ha pogut llegir l’àudio de «{0}». Prova d’exportar-lo com a MP3 o WAV.",
+    'Para transcribir necesitas una clave de OpenAI o de Gemini (Claude no transcribe audio). Añádela en el botón «IA».': "Per transcriure necessites una clau d’OpenAI o de Gemini (Claude no transcriu àudio). Afegeix-la al botó «IA».",
+    'actual': "actual",
+    'no aparece en tu clave': "no apareix a la teva clau",
+    'Otro modelo (escribirlo)…': "Un altre model (escriure’l)…",
+    'Escribe el nombre exacto del modelo': "Escriu el nom exacte del model",
+    'Cargando los modelos de tu clave…': "Carregant els models de la teva clau…",
+    '{0} modelos disponibles en tu clave: elígelo en el desplegable.': "{0} models disponibles amb la teva clau: tria’l al desplegable.",
+    'Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».': "La teva clau no ha retornat cap model de text. Escriu el nom amb «Un altre model»."
+  },
+  eu: {
+    'Inicio': "Hasiera",
+    'Ayuda': "Laguntza",
+    'IA': "AA",
+    'Pasos': "Urratsak",
+    'Atrás': "Atzera",
+    'Siguiente': "Hurrengoa",
+    'Cerrar': "Itxi",
+    'Cancelar': "Utzi",
+    'Idioma': "Hizkuntza",
+    'Volver al inicio': "Hasierara itzuli",
+    'Inteligencia artificial': "Adimen artifiziala",
+    'Proveedor': "Hornitzailea",
+    'Tu clave de API': "Zure API gakoa",
+    'Ver': "Ikusi",
+    'Modelo': "Eredua",
+    'Ver los modelos de mi clave': "Nire gakoaren ereduak ikusi",
+    'f.ia.ayuda': "Gakoa nabigatzaile honetan bakarrik gordetzen da eta zure hornitzaileari bakarrik bidaltzen zaio. Pertsona bakoitzak berea erabiltzen du eta bere erabilera ordaintzen du. Aukeratu eredu merke bat: erabilera honek ez du ahaltsuena behar.",
+    'Esto es lo que saldría hacia tu proveedor de IA': "Hau bidaliko litzateke zure AA hornitzailera",
+    'f.envio.chk': "Lagina berrikusi dut eta baieztatzen dut nire ordenagailutik atera daitekeela.",
+    'Muestra del envío:': "Bidalketaren lagina:",
+    'Realizada entre': "Egileak",
+    'Realizada por': "Egilea",
+    'Cómo funciona': "Nola dabilen",
+    'Dónde va cada cosa': "Non dagoen bakoitza",
+    'Siempre en tu ordenador': "Beti zure ordenagailuan",
+    'Sale hacia tu proveedor de IA': "Zure AA hornitzailera bidaltzen da",
+    'No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.': "Ezin izan da {0} liburutegia kargatu. Agian blokeatzaile batek edo zure erakundearen sareak eragozten du; probatu beste sare bat edo desaktibatu blokeatzailea orri honetan.",
+    'Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.': "Konexiorik gabe: internet behar da fitxategi mota hau lehen aldiz irekitzeko.",
+    'No se pudo guardar en el navegador (¿demasiado material?)': "Ezin izan da nabigatzailean gorde (material gehiegi?)",
+    'No se pudo guardar en el navegador': "Ezin izan da nabigatzailean gorde",
+    '{0} no reconoce tu clave. Revísala en el botón «IA».': "{0}k ez du zure gakoa ezagutzen. Egiaztatu «AA» botoian.",
+    'Tu clave no tiene acceso al modelo «{0}». Elige otro en el botón «IA».': "Zure gakoak ez du «{0}» eredurako sarbiderik. Aukeratu beste bat «AA» botoian.",
+    'Tu cuenta de {0} no tiene saldo o ha alcanzado su límite.': "Zure {0} kontuak ez du saldorik edo mugara iritsi da.",
+    'El modelo «{0}» no admite imágenes. Elige uno con visión.': "«{0}» ereduak ez du irudirik onartzen. Aukeratu ikusmena duen bat.",
+    'No hay conexión con {0}.': "Ez dago konexiorik {0}-rekin.",
+    '{0} no responde ahora mismo. Inténtalo de nuevo en un momento.': "{0}k ez du erantzuten oraintxe. Saiatu berriro geroxeago.",
+    'Falta tu clave de IA. Pulsa el botón «IA», arriba.': "Zure AA gakoa falta da. Sakatu goiko «AA» botoia.",
+    'OpenAI no responde ahora mismo.': "OpenAIk ez du erantzuten oraintxe.",
+    'El proveedor ha bloqueado la respuesta ({0}).': "Hornitzaileak erantzuna blokeatu du ({0}).",
+    'La IA no devolvió una respuesta con el formato esperado. Inténtalo de nuevo.': "AAk ez du espero zen formatuko erantzunik itzuli. Saiatu berriro.",
+    'Primero pega tu clave.': "Lehenik itsatsi zure gakoa.",
+    '{0} modelos disponibles en tu clave; escribe o elige uno.': "{0} eredu daude erabilgarri zure gakoarekin; idatzi edo aukeratu bat.",
+    'Pega tu clave de IA para continuar': "Itsatsi zure AA gakoa jarraitzeko",
+    'El PowerPoint no tiene diapositivas': "PowerPointak ez du diapositibarik",
+    'Formato no admitido (usa Word, PDF, PowerPoint, texto, imágenes, audio o vídeo)': "Formatu onartezina (erabili Word, PDF, PowerPoint, testua, irudiak, audioa edo bideoa)",
+    '«{0}» pesa más de 600 MB: exporta solo el audio (MP3 o WAV) y súbelo en su lugar.': "«{0}»k 600 MB baino gehiago ditu: esportatu audioa bakarrik (MP3 edo WAV) eta igo hori.",
+    'No se pudo leer el audio de «{0}». Prueba a exportarlo como MP3 o WAV.': "Ezin izan da «{0}»ren audioa irakurri. Saiatu MP3 edo WAV gisa esportatzen.",
+    'Para transcribir necesitas una clave de OpenAI o de Gemini (Claude no transcribe audio). Añádela en el botón «IA».': "Transkribatzeko OpenAI edo Gemini gako bat behar duzu (Claudek ez du audiorik transkribatzen). Gehitu «AA» botoian.",
+    'actual': "oraingoa",
+    'no aparece en tu clave': "ez dago zure gakoan",
+    'Otro modelo (escribirlo)…': "Beste eredu bat (idatzi)…",
+    'Escribe el nombre exacto del modelo': "Idatzi ereduaren izen zehatza",
+    'Cargando los modelos de tu clave…': "Zure gakoaren ereduak kargatzen…",
+    '{0} modelos disponibles en tu clave: elígelo en el desplegable.': "{0} eredu daude zure gakoarekin: aukeratu zabaltzen den zerrendan.",
+    'Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».': "Zure gakoak ez du testu-eredurik itzuli. Idatzi izena «Beste eredu bat» aukerarekin."
+  },
+  gl: {
+    'Inicio': "Inicio",
+    'Ayuda': "Axuda",
+    'IA': "IA",
+    'Pasos': "Pasos",
+    'Atrás': "Atrás",
+    'Siguiente': "Seguinte",
+    'Cerrar': "Pechar",
+    'Cancelar': "Cancelar",
+    'Idioma': "Idioma",
+    'Volver al inicio': "Volver ao inicio",
+    'Inteligencia artificial': "Intelixencia artificial",
+    'Proveedor': "Provedor",
+    'Tu clave de API': "A túa clave de API",
+    'Ver': "Ver",
+    'Modelo': "Modelo",
+    'Ver los modelos de mi clave': "Ver os modelos da miña clave",
+    'f.ia.ayuda': "A clave gárdase só neste navegador e envíase unicamente ao teu provedor. Cada persoa usa a súa e paga o seu uso. Escolle un modelo económico: este uso non precisa o máis potente.",
+    'Esto es lo que saldría hacia tu proveedor de IA': "Isto é o que sairía cara ao teu provedor de IA",
+    'f.envio.chk': "Revisei a mostra e confirmo que pode saír do meu ordenador.",
+    'Muestra del envío:': "Mostra do envío:",
+    'Realizada entre': "Realizada por",
+    'Realizada por': "Realizada por",
+    'Cómo funciona': "Como funciona",
+    'Dónde va cada cosa': "Onde vai cada cousa",
+    'Siempre en tu ordenador': "Sempre no teu ordenador",
+    'Sale hacia tu proveedor de IA': "Sae cara ao teu provedor de IA",
+    'No se pudo cargar la librería {0}. Puede que un bloqueador o la red de tu institución la impida; prueba otra red o desactiva el bloqueador en esta página.': "Non se puido cargar a biblioteca {0}. Quizais un bloqueador ou a rede da túa institución o impida; proba outra rede ou desactiva o bloqueador nesta páxina.",
+    'Sin conexión: hace falta internet para abrir este tipo de fichero la primera vez.': "Sen conexión: cómpre internet para abrir este tipo de ficheiro a primeira vez.",
+    'No se pudo guardar en el navegador (¿demasiado material?)': "Non se puido gardar no navegador (demasiado material?)",
+    'No se pudo guardar en el navegador': "Non se puido gardar no navegador",
+    '{0} no reconoce tu clave. Revísala en el botón «IA».': "{0} non recoñece a túa clave. Revísaa no botón «IA».",
+    'Tu clave no tiene acceso al modelo «{0}». Elige otro en el botón «IA».': "A túa clave non ten acceso ao modelo «{0}». Escolle outro no botón «IA».",
+    'Tu cuenta de {0} no tiene saldo o ha alcanzado su límite.': "A túa conta de {0} non ten saldo ou alcanzou o seu límite.",
+    'El modelo «{0}» no admite imágenes. Elige uno con visión.': "O modelo «{0}» non admite imaxes. Escolle un con visión.",
+    'No hay conexión con {0}.': "Non hai conexión con {0}.",
+    '{0} no responde ahora mismo. Inténtalo de nuevo en un momento.': "{0} non responde agora mesmo. Ténteo de novo nun momento.",
+    'Falta tu clave de IA. Pulsa el botón «IA», arriba.': "Falta a túa clave de IA. Preme o botón «IA», arriba.",
+    'OpenAI no responde ahora mismo.': "OpenAI non responde agora mesmo.",
+    'El proveedor ha bloqueado la respuesta ({0}).': "O provedor bloqueou a resposta ({0}).",
+    'La IA no devolvió una respuesta con el formato esperado. Inténtalo de nuevo.': "A IA non devolveu unha resposta co formato esperado. Ténteo de novo.",
+    'Primero pega tu clave.': "Primeiro pega a túa clave.",
+    '{0} modelos disponibles en tu clave; escribe o elige uno.': "{0} modelos dispoñibles na túa clave; escribe ou escolle un.",
+    'Pega tu clave de IA para continuar': "Pega a túa clave de IA para continuar",
+    'El PowerPoint no tiene diapositivas': "O PowerPoint non ten diapositivas",
+    'Formato no admitido (usa Word, PDF, PowerPoint, texto, imágenes, audio o vídeo)': "Formato non admitido (usa Word, PDF, PowerPoint, texto, imaxes, audio ou vídeo)",
+    '«{0}» pesa más de 600 MB: exporta solo el audio (MP3 o WAV) y súbelo en su lugar.': "«{0}» pesa máis de 600 MB: exporta só o audio (MP3 ou WAV) e súbeo no seu lugar.",
+    'No se pudo leer el audio de «{0}». Prueba a exportarlo como MP3 o WAV.': "Non se puido ler o audio de «{0}». Proba a exportalo como MP3 ou WAV.",
+    'Para transcribir necesitas una clave de OpenAI o de Gemini (Claude no transcribe audio). Añádela en el botón «IA».': "Para transcribir precisas unha clave de OpenAI ou de Gemini (Claude non transcribe audio). Engádea no botón «IA».",
+    'actual': "actual",
+    'no aparece en tu clave': "non aparece na túa clave",
+    'Otro modelo (escribirlo)…': "Outro modelo (escribilo)…",
+    'Escribe el nombre exacto del modelo': "Escribe o nome exacto do modelo",
+    'Cargando los modelos de tu clave…': "Cargando os modelos da túa clave…",
+    '{0} modelos disponibles en tu clave: elígelo en el desplegable.': "{0} modelos dispoñibles na túa clave: escólleo no despregable.",
+    'Tu clave no devolvió ningún modelo de texto. Escribe el nombre con «Otro modelo».': "A túa clave non devolveu ningún modelo de texto. Escribe o nome con «Outro modelo»."
+  }
+};
+
+const _dict = l => ({...(I18N_BASE[l] || {}), ...((typeof I18N !== 'undefined' && I18N && I18N[l]) || {})});
+const D = () => _D || (_D = _dict(LANG));
+/* t(clave, ...args): traduce y rellena {0}, {1}…  Si falta la traducción devuelve el español (la clave o I18N.es[clave]): nunca texto vacío. */
+function t(k, ...a) {
+  let s = D()[k];
+  if (s === undefined && typeof I18N !== 'undefined' && I18N && I18N.es) s = I18N.es[k];
+  if (s === undefined) s = k;
+  return a.length ? String(s).replace(/\{(\d+)\}/g, (m, i) => a[+i] ?? m) : String(s);
+}
+function applyI18n(root = document) {
+  document.documentElement.lang = LANG;
+  root.querySelectorAll('[data-i18n]').forEach(el => {
+    if (el._es === undefined) el._es = el.innerHTML;                       // el español original, tal como está en el HTML
+    const v = LANG === 'es' ? undefined : D()[el.dataset.i18n];
+    el.innerHTML = v !== undefined ? v : el._es;
+  });
+  root.querySelectorAll('[data-i18n-attr]').forEach(el => {
+    el._esA = el._esA || {};
+    el.dataset.i18nAttr.split(';').forEach(par => {
+      const [at, k] = par.split(':').map(x => x.trim()); if (!at || !k) return;
+      if (!(at in el._esA)) el._esA[at] = el.getAttribute(at) ?? '';
+      const v = LANG === 'es' ? undefined : D()[k]; el.setAttribute(at, v !== undefined ? v : el._esA[at]);
+    });
+  });
+  if (applyI18n._tit === undefined) applyI18n._tit = document.title;
+  const tit = LANG === 'es' ? undefined : D()['title']; document.title = tit !== undefined ? tit : applyI18n._tit;
+}
+function setLang(l) {
+  if (!langsOn().includes(l)) l = langsOn()[0];
+  LANG = l; _D = null; try { localStorage.setItem(APP + '_lang', l); } catch {}
+  applyI18n(); const s = $('selLang'); if (s) s.value = l;
+  window.dispatchEvent(new CustomEvent('langchange', {detail: l}));
+}
+/* llamada UNA vez desde iniciaUI(). Orden de preferencia: ?lang=xx en la URL (para compartir enlaces) → elección guardada → español. */
+function initI18n() {
+  let l = 'es'; try { l = localStorage.getItem(APP + '_lang') || 'es'; } catch {}
+  const q = new URLSearchParams(location.search).get('lang'); if (q) l = q;
+  LANG = langsOn().includes(l) ? l : 'es'; _D = null;
+  const sel = $('selLang');
+  if (sel) { sel.innerHTML = langsOn().map(x => `<option value="${x}">${LANGS[x]}</option>`).join(''); sel.value = LANG; sel.onchange = () => setLang(sel.value); }
+  if (langsOn().length < 2 && $('langBox')) $('langBox').remove();
+  applyI18n();
+}
+/* Para las pruebas: claves del HTML, pasos, botones y glosario que no tienen traducción en algún idioma activo ([] = completo). */
+function i18nFaltan() {
+  const keys = new Set(), lit = [];
+  document.querySelectorAll('[data-i18n]').forEach(el => keys.add(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-attr]').forEach(el => el.dataset.i18nAttr.split(';').forEach(p => { const k = (p.split(':')[1] || '').trim(); if (k) keys.add(k); }));
+  if (typeof STEPS !== 'undefined') lit.push(...STEPS);
+  if (typeof NAV !== 'undefined') NAV.forEach(n => lit.push(n[0], n[1]));
+  if (typeof GLOS !== 'undefined') GLOS.forEach(g => lit.push(g[0], g[1]));
+  if (typeof HUBS !== 'undefined') lit.push(...HUBS);
+  const out = [];
+  langsOn().filter(l => l !== 'es').forEach(l => { const d = _dict(l); [...keys, ...lit.filter(Boolean)].forEach(k => { if (d[k] === undefined) out.push(l + ': ' + String(k).slice(0, 60)); }); });
+  return out;
+}
+
+/* ── salidas: Word, ZIP y CSV SIN LIBRERÍAS EXTERNAS ─────────────────────────────────────────────────────────
+   Antes se cargaban docx y JSZip desde cdnjs al pulsar «Descargar»: si la URL de cdnjs cambiaba, si había un
+   bloqueador, un proxy de la universidad o no había red, salía «No se pudo cargar una librería: ¿hay conexión?».
+   Ahora el .docx y el .zip se escriben aquí mismo (Office Open XML + ZIP), funcionan sin conexión, con file:// y
+   con cualquier CSP. No toques esto para volver a usar window.docx: si una app necesita algo que wordDeMarkdown
+   no hace, amplía este escritor (párrafos, tablas, estilos), no añadas una dependencia de red. */
+
+/* ZIP: crc32 + cabeceras locales y directorio central. Comprime con deflate-raw si el navegador lo permite
+   (CompressionStream); si no, guarda sin comprimir (método 0), que Word y cualquier descompresor leen igual. */
+const _CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = _CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+async function _bytes(c) {
+  if (c instanceof Uint8Array) return c;
+  if (c instanceof ArrayBuffer) return new Uint8Array(c);
+  if (ArrayBuffer.isView(c)) return new Uint8Array(c.buffer, c.byteOffset, c.byteLength);
+  if (c instanceof Blob) return new Uint8Array(await c.arrayBuffer());
+  return new TextEncoder().encode(String(c ?? ''));
+}
+async function _deflate(b) {
+  if (typeof CompressionStream !== 'function' || b.length < 200) return null;
+  try { return new Uint8Array(await new Response(new Blob([b]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer()); } catch { return null; }
+}
+async function zipBytes(ficheros, {comprimir = true} = {}) {
+  const d = new Date(), tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dt = ((Math.max(d.getFullYear(), 1980) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  const loc = [], cen = []; let off = 0;
+  for (const [nombre, cont] of Object.entries(ficheros)) {
+    const nm = new TextEncoder().encode(nombre), raw = await _bytes(cont), crc = crc32(raw);
+    const def = comprimir ? await _deflate(raw) : null, usa = def && def.length < raw.length, dat = usa ? def : raw, met = usa ? 8 : 0;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); h.setUint16(8, met, true); h.setUint16(10, tm, true); h.setUint16(12, dt, true);
+    h.setUint32(14, crc, true); h.setUint32(18, dat.length, true); h.setUint32(22, raw.length, true); h.setUint16(26, nm.length, true); h.setUint16(28, 0, true);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true); c.setUint16(10, met, true); c.setUint16(12, tm, true); c.setUint16(14, dt, true);
+    c.setUint32(16, crc, true); c.setUint32(20, dat.length, true); c.setUint32(24, raw.length, true); c.setUint16(28, nm.length, true); c.setUint32(42, off, true);
+    loc.push(new Uint8Array(h.buffer), nm, dat); cen.push(new Uint8Array(c.buffer), nm);
+    off += 30 + nm.length + dat.length;
+  }
+  const tamCen = cen.reduce((s, x) => s + x.length, 0), n = Object.keys(ficheros).length, e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, n, true); e.setUint16(10, n, true); e.setUint32(12, tamCen, true); e.setUint32(16, off, true);
+  return new Blob([...loc, ...cen, new Uint8Array(e.buffer)]);
+}
+/* zipDe({'nombre.ext': Blob|string|Uint8Array|ArrayBuffer, …}) → Blob .zip  (misma firma que la versión con JSZip) */
+async function zipDe(ficheros) { const b = await zipBytes(ficheros); return new Blob([b], {type: 'application/zip'}); }
+
+/* Word (.docx) escrito a mano: Office Open XML mínimo, válido para Word, LibreOffice, Pages y Google Docs. */
+const _x = s => String(s ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+/* un «run» de texto: {text, b, i, col, s (medios puntos; null = el del estilo), font (null = el del estilo)} */
+function wRun({text = '', b, i, col, s = 22, font = 'Arial'} = {}) {
+  const pr = `<w:rPr>${font ? `<w:rFonts w:ascii="${font}" w:hAnsi="${font}" w:cs="${font}"/>` : ''}${b ? '<w:b/>' : ''}${i ? '<w:i/>' : ''}${col ? `<w:color w:val="${col}"/>` : ''}${s ? `<w:sz w:val="${s}"/><w:szCs w:val="${s}"/>` : ''}</w:rPr>`;   // s/font = null → los del estilo
+  return String(text).split('\n').map((l, k) => (k ? '<w:br/>' : '') + `<w:t xml:space="preserve">${_x(l)}</w:t>`).map(t => `<w:r>${pr}${t}</w:r>`).join('');
+}
+/* **negrita**, *cursiva* y `código` en línea → runs */
+function wInline(tx, base = {}) {   // base.b pone todo en negrita (cabeceras de tabla)
+  return String(tx).split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/).filter(Boolean).map(p =>
+    p.startsWith('**') ? wRun({...base, text: p.slice(2, -2), b: true}) :
+    p.startsWith('`') ? wRun({...base, text: p.slice(1, -1), font: 'Consolas'}) :
+    /^\*[^*\s]/.test(p) && p.endsWith('*') && p.length > 2 ? wRun({...base, text: p.slice(1, -1), i: true}) :
+    wRun({...base, text: p})).join('');
+}
+/* un párrafo: o = {h (1-3 → Título 1-3), c (centrado), after (twips), ind (sangría, twips), plain, s, b, i, col} */
+function wPara(tx, o = {}) {
+  const ppr = (o.h ? `<w:pStyle w:val="Heading${o.h}"/>` : '') + `<w:spacing w:after="${o.after ?? 110}"/>` + (o.ind ? `<w:ind w:left="${o.ind}" w:hanging="${o.hang ?? 0}"/>` : '') + (o.c ? '<w:jc w:val="center"/>' : '');
+  const s = o.h ? null : o.s;   // los títulos toman tamaño y color de su estilo (Heading1-3)
+  const runs = o.plain ? wRun({text: tx, s, b: o.b, i: o.i, col: o.col}) : wInline(tx, {s, i: o.i, col: o.col});
+  return `<w:p><w:pPr>${ppr}</w:pPr>${runs}</w:p>`;
+}
+/* tabla a partir de filas de celdas (la primera, cabecera en negrita) */
+function wTabla(filas) {
+  const nc = Math.max(...filas.map(f => f.length)), w = Math.floor(9000 / nc), bd = '<w:top w:val="single" w:sz="4" w:color="BFC9D4"/><w:left w:val="single" w:sz="4" w:color="BFC9D4"/><w:bottom w:val="single" w:sz="4" w:color="BFC9D4"/><w:right w:val="single" w:sz="4" w:color="BFC9D4"/><w:insideH w:val="single" w:sz="4" w:color="BFC9D4"/><w:insideV w:val="single" w:sz="4" w:color="BFC9D4"/>';
+  const fila = (f, cab) => '<w:tr>' + Array.from({length: nc}, (_, j) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${cab ? '<w:shd w:val="clear" w:color="auto" w:fill="EEF2F6"/>' : ''}</w:tcPr><w:p><w:pPr><w:spacing w:after="40"/></w:pPr>${wInline(f[j] ?? '', {s: 20, b: cab})}</w:p></w:tc>`).join('') + '</w:tr>';
+  return `<w:tbl><w:tblPr><w:tblW w:w="${w * nc}" w:type="dxa"/><w:tblBorders>${bd}</w:tblBorders><w:tblCellMar><w:left w:w="80" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${'<w:gridCol w:w="' + w + '"/>'.repeat(nc)}</w:tblGrid>${filas.map((f, k) => fila(f, k === 0)).join('')}</w:tbl><w:p><w:pPr><w:spacing w:after="60"/></w:pPr></w:p>`;
+}
+/* wordDeXml(cuerpoXml, {creador, titulo}) → Blob .docx   (para apps que montan su propio cuerpo con wPara/wTabla) */
+async function wordDeXml(cuerpo, {creador = '', titulo = ''} = {}) {
+  const W = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const hs = [[1, 32, '0F2237'], [2, 26, '0F2237'], [3, 23, '33475B']].map(([n, s, col]) => `<w:style w:type="paragraph" w:styleId="Heading${n}"><w:name w:val="heading ${n}"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:uiPriority w:val="9"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="${n === 1 ? 280 : 200}" w:after="100"/><w:outlineLvl w:val="${n - 1}"/></w:pPr><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:b/><w:color w:val="${col}"/><w:sz w:val="${s}"/><w:szCs w:val="${s}"/></w:rPr></w:style>`).join('');
+  const lang = typeof LANG === 'string' ? ({es: 'es-ES', ca: 'ca-ES', eu: 'eu-ES', gl: 'gl-ES', en: 'en-GB', pt: 'pt-PT'}[LANG] || 'es-ES') : 'es-ES';
+  const ahora = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  return new Blob([await zipBytes({
+    '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>',
+    '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>',
+    'docProps/core.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${_x(titulo)}</dc:title><dc:creator>${_x(creador)}</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${ahora}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${ahora}</dcterms:modified></cp:coreProperties>`,
+    'word/_rels/document.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+    'word/styles.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles ${W}><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:eastAsia="Arial"/><w:sz w:val="22"/><w:szCs w:val="22"/><w:lang w:val="${lang}"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="110" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>${hs}</w:styles>`,
+    'word/document.xml': `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${W}><w:body>${cuerpo}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1418" w:right="1418" w:bottom="1418" w:left="1418" w:header="709" w:footer="709" w:gutter="0"/></w:sectPr></w:body></w:document>`
+  })], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+/* wordDeMarkdown(md, {titulo, subtitulo, pie, kicker}) → Blob .docx
+   Convierte #/##/### encabezados, listas, tablas Markdown (| a | b |), **negritas**, *cursivas* y `código`. */
+async function wordDeMarkdown(md, {titulo = '', subtitulo = '', pie = '', kicker = ''} = {}) {
+  const k = [];
+  if (kicker) k.push(wPara(String(kicker).toUpperCase(), {c: true, b: true, col: 'E4572E', s: 20, plain: true}));
+  if (titulo) k.push(wPara(titulo, {c: true, b: true, s: 32, plain: true}));
+  if (subtitulo) k.push(wPara(subtitulo, {c: true, col: '5D7691', s: 20, after: 260, plain: true}));
+  const lineas = String(md ?? '').replace(/\r\n?/g, '\n').split('\n'); let tabla = [];
+  const cierraTabla = () => { if (tabla.length) { k.push(wTabla(tabla)); tabla = []; } };
+  for (const l of lineas) {
+    const t = l.trimEnd(); let m;
+    if (/^\s*\|.*\|\s*$/.test(t)) { if (!/^\s*\|[\s:|-]+\|\s*$/.test(t)) tabla.push(t.trim().slice(1, -1).split('|').map(c => c.trim())); continue; }
+    cierraTabla(); if (!t.trim() || /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(t)) continue;
+    if (m = t.match(/^(#{1,6})\s+(.*)/)) k.push(wPara(m[2], {h: Math.min(m[1].length, 3)}));
+    else if (m = t.match(/^(\s*)[-*•]\s+(.*)/)) k.push(wPara('•\t' + m[2], {ind: 360 + Math.min(m[1].length, 8) * 90, hang: 240, after: 60}));
+    else if (m = t.match(/^(\s*)(\d+[.)])\s+(.*)/)) k.push(wPara(m[2] + '\t' + m[3], {ind: 400 + Math.min(m[1].length, 8) * 90, hang: 320, after: 60}));
+    else if (m = t.match(/^>\s?(.*)/)) k.push(wPara(m[1], {ind: 360, i: true, col: '5D7691'}));
+    else k.push(wPara(t));
+  }
+  cierraTabla();
+  if (pie) k.push(wPara(pie, {i: true, s: 16, col: '8899AA', plain: true}));
+  const app = typeof APP_NAME === 'string' ? APP_NAME : (typeof APP === 'string' ? APP : '');
+  return wordDeXml(k.join(''), {creador: app, titulo: titulo || app});
+}
+/* csv con BOM, separador «;» (Excel en español) y comillas escapadas */
+const csvq = v => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const csvDe = (cab, filas) => '\ufeff' + [cab, ...filas].map(f => f.map(csvq).join(';')).join('\r\n');
+
+/* ══ Diccionarios de UrgencIA para data-i18n y t() (navegación, ayuda y textos del HTML). El resto de textos van en línea «es|en|pt». ══ */
+const I18N = {
+  en: {
+    'title': "UrgencIA · Emergencies in the aesthetic medicine clinic",
+    'hero.eyebrow': "EstéticIA Kit · Master's in Comprehensive Aesthetic and Anti-Ageing Medicine · Miguel Hernández University of Elche", 'hero.h1': "When something goes wrong, <em>the protocol on screen</em>", 'hero.lede': "Choose the emergency and follow the steps: the clock runs, every action is logged with its time and doses are calculated from the patient's weight and your clinic's values. At the end, the transfer report is ready. No AI and no connection needed.",
+    's.empezar': 'Start', 's.ejemplo': 'See an example',
+    'u.que': 'What is happening?', 'u.sim': 'Drill mode: for practice. Everything is marked as a drill and does not correspond to a real patient.', 'u.tri': 'Not sure: help me choose', 'u.antes': 'Before it happens',
+    's.zl': '<li>Emergencies, the log and the reports, stored in this browser</li><li>The emergency trolley and your clinic\'s protocol values</li><li>Nothing is sent to any server: the app uses no AI and no connection</li>',
+    'Informe de traslado': 'Transfer report', 's.inf.lede': 'It is generated from what you have recorded. Complete the status at transfer or discharge, review it and download, print or copy it.',
+    'Carro de urgencias': 'Emergency trolley', 's.car.lede': 'Record the expiry date of each item and log a check every month. Expired items and those expiring within 30 days are flagged.',
+    'Protocolos de tu consulta': 'Your clinic\'s protocols', 's.pro.lede': 'Dose values come from the published sources cited. Adjust them to your clinic\'s written protocol and your products.',
+    'Paso 2 de 4': 'Step 2 of 4', 'Paso 3 de 4': 'Step 3 of 4', 'Paso 4 de 4': 'Step 4 of 4',
+    'f.pie': 'Support tool for doctors: it does not replace your clinic\'s written protocol, product information or clinical judgement. Your data are stored only in this browser.',
+    'Inicio': 'Home', 'Urgencia': 'Emergency', 'Informe': 'Report', 'Carro': 'Trolley', 'Protocolos': 'Protocols',
+    'Siguiente: urgencia': 'Next: emergency', 'Terminar e informe': 'Finish and report', 'Volver al inicio': 'Back to home', 'Siguiente: protocolos': 'Next: protocols',
+    'Elige la urgencia: el reloj empieza a contar.': 'Choose the emergency: the clock starts running.', 'Cada acción queda registrada con su hora.': 'Every action is logged with its time.', 'Completa la situación final y descarga el informe.': 'Complete the final status and download the report.', 'Revisa las caducidades cada mes.': 'Check expiry dates every month.', 'Ajusta los valores al protocolo de tu consulta.': 'Adjust the values to your clinic\'s protocol.',
+    '¿Qué es UrgencIA?': 'What is UrgencIA?', 'La primera app del Kit EstéticIA: los protocolos de urgencia de la consulta de medicina estética en pantalla, con reloj, registro de cada acción con su hora, dosis calculadas, informe de traslado y revisión del carro.': 'The first app of the EstéticIA Kit: the aesthetic medicine clinic\'s emergency protocols on screen, with a clock, a time-stamped log of every action, calculated doses, a transfer report and trolley checks.',
+    'Cómo se usa en una urgencia': 'How to use it in an emergency', 'Pulsa la urgencia en la portada. El reloj empieza y el registro también. Marca cada paso al hacerlo y pulsa «Administrada» al dar un fármaco: queda anotado con su hora y su dosis. Al terminar, el informe ya está escrito.': 'Select the emergency on the home screen. The clock and the log start. Tick each step as you do it and select «Given» when you give a drug: it is recorded with its time and dose. When you finish, the report is already written.',
+    'De dónde salen las dosis': 'Where the doses come from', 'De las fuentes publicadas que se citan en cada protocolo: DeLorenzi 2017 para la hialuronidasa, Resuscitation Council UK 2021 para la anafilaxia y ASRA 2020 para la toxicidad por anestésico local. Cada consulta ajusta los valores a su protocolo escrito y a sus productos en «Protocolos».': 'From the published sources cited in each protocol: DeLorenzi 2017 for hyaluronidase, Resuscitation Council UK 2021 for anaphylaxis and ASRA 2020 for local anaesthetic toxicity. Each clinic adjusts the values to its written protocol and its products in «Protocols».',
+    'Modo simulacro': 'Drill mode', 'Para practicar con el equipo. Todo lo que se registra en simulacro queda marcado así, también en el informe.': 'For practising with the team. Everything recorded in a drill is marked as such, including in the report.',
+    'Sin IA y sin conexión': 'No AI and no connection', 'La app no usa inteligencia artificial ni envía nada a ningún servidor. Funciona aunque no haya internet en la consulta, una vez abierta.': 'The app uses no artificial intelligence and sends nothing to any server. Once open, it works even without internet in the clinic.',
+    'Privacidad': 'Privacy', 'Todo se guarda en este navegador. Usa un identificador en lugar del nombre del paciente.': 'Everything is stored in this browser. Use an identifier instead of the patient\'s name.',
+    'Límites': 'Limits', 'Es una ayuda para médicos formados en el manejo de estas urgencias. No sustituye al protocolo escrito de tu consulta, a las fichas técnicas, a la formación en soporte vital ni al juicio clínico. Ante la duda, llama al teléfono de emergencias.': 'It is an aid for doctors trained in managing these emergencies. It does not replace your clinic\'s written protocol, product information, life-support training or clinical judgement. When in doubt, call the emergency number.'
+  },
+  pt: {
+    'title': "UrgencIA · Urgências na consulta de medicina estética",
+    'hero.eyebrow': "Kit EstéticIA · Mestrado de Medicina Estética Integral e Antienvelhecimento · Universidade Miguel Hernández de Elche", 'hero.h1': "Quando algo corre mal, <em>o protocolo no ecrã</em>", 'hero.lede': "Escolha a urgência e siga os passos: o relógio corre, cada ação fica registada com a sua hora e as doses são calculadas com o peso do doente e os valores da sua consulta. No fim, o relatório de transferência está pronto. Sem IA e sem ligação.",
+    's.empezar': 'Começar', 's.ejemplo': 'Ver um exemplo',
+    'u.que': 'O que está a acontecer?', 'u.sim': 'Modo simulacro: para praticar. Tudo fica marcado como simulacro e não corresponde a um doente real.', 'u.tri': 'Não tenho a certeza: ajude-me a escolher', 'u.antes': 'Antes que aconteça',
+    's.zl': '<li>As urgências, o registo e os relatórios, guardados neste navegador</li><li>O carro de urgência e os valores do protocolo da sua consulta</li><li>Nada sai para nenhum servidor: a app não usa IA nem ligação</li>',
+    'Informe de traslado': 'Relatório de transferência', 's.inf.lede': 'É gerado com o que registou. Complete a situação na transferência ou alta, reveja-o e descarregue-o, imprima-o ou copie-o.',
+    'Carro de urgencias': 'Carro de urgência', 's.car.lede': 'Anote a validade de cada elemento e registe uma revisão todos os meses. O que está expirado e o que expira em menos de 30 dias fica assinalado.',
+    'Protocolos de tu consulta': 'Protocolos da sua consulta', 's.pro.lede': 'Os valores das doses vêm das fontes publicadas citadas. Ajuste-os ao protocolo escrito da sua consulta e aos seus produtos.',
+    'Paso 2 de 4': 'Passo 2 de 4', 'Paso 3 de 4': 'Passo 3 de 4', 'Paso 4 de 4': 'Passo 4 de 4',
+    'f.pie': 'Ferramenta de apoio para médicos: não substitui o protocolo escrito da sua consulta, os resumos das características nem o juízo clínico. Os seus dados ficam guardados apenas neste navegador.',
+    'Inicio': 'Início', 'Urgencia': 'Urgência', 'Informe': 'Relatório', 'Carro': 'Carro', 'Protocolos': 'Protocolos',
+    'Siguiente: urgencia': 'Seguinte: urgência', 'Terminar e informe': 'Terminar e relatório', 'Volver al inicio': 'Voltar ao início', 'Siguiente: protocolos': 'Seguinte: protocolos',
+    'Elige la urgencia: el reloj empieza a contar.': 'Escolha a urgência: o relógio começa a contar.', 'Cada acción queda registrada con su hora.': 'Cada ação fica registada com a sua hora.', 'Completa la situación final y descarga el informe.': 'Complete a situação final e descarregue o relatório.', 'Revisa las caducidades cada mes.': 'Reveja as validades todos os meses.', 'Ajusta los valores al protocolo de tu consulta.': 'Ajuste os valores ao protocolo da sua consulta.',
+    '¿Qué es UrgencIA?': 'O que é o UrgencIA?', 'La primera app del Kit EstéticIA: los protocolos de urgencia de la consulta de medicina estética en pantalla, con reloj, registro de cada acción con su hora, dosis calculadas, informe de traslado y revisión del carro.': 'A primeira app do Kit EstéticIA: os protocolos de urgência da consulta de medicina estética no ecrã, com relógio, registo de cada ação com a sua hora, doses calculadas, relatório de transferência e revisão do carro.',
+    'Cómo se usa en una urgencia': 'Como se usa numa urgência', 'Pulsa la urgencia en la portada. El reloj empieza y el registro también. Marca cada paso al hacerlo y pulsa «Administrada» al dar un fármaco: queda anotado con su hora y su dosis. Al terminar, el informe ya está escrito.': 'Selecione a urgência na página inicial. O relógio e o registo começam. Marque cada passo ao fazê-lo e selecione «Administrada» ao dar um fármaco: fica anotado com a hora e a dose. No fim, o relatório já está escrito.',
+    'De dónde salen las dosis': 'De onde vêm as doses', 'De las fuentes publicadas que se citan en cada protocolo: DeLorenzi 2017 para la hialuronidasa, Resuscitation Council UK 2021 para la anafilaxia y ASRA 2020 para la toxicidad por anestésico local. Cada consulta ajusta los valores a su protocolo escrito y a sus productos en «Protocolos».': 'Das fontes publicadas citadas em cada protocolo: DeLorenzi 2017 para a hialuronidase, Resuscitation Council UK 2021 para a anafilaxia e ASRA 2020 para a toxicidade por anestésico local. Cada consulta ajusta os valores ao seu protocolo escrito e aos seus produtos em «Protocolos».',
+    'Modo simulacro': 'Modo simulacro', 'Para practicar con el equipo. Todo lo que se registra en simulacro queda marcado así, también en el informe.': 'Para praticar com a equipa. Tudo o que se regista em simulacro fica assinalado como tal, também no relatório.',
+    'Sin IA y sin conexión': 'Sem IA e sem ligação', 'La app no usa inteligencia artificial ni envía nada a ningún servidor. Funciona aunque no haya internet en la consulta, una vez abierta.': 'A app não usa inteligência artificial nem envia nada para nenhum servidor. Uma vez aberta, funciona mesmo sem internet na consulta.',
+    'Privacidad': 'Privacidade', 'Todo se guarda en este navegador. Usa un identificador en lugar del nombre del paciente.': 'Tudo fica guardado neste navegador. Use um identificador em vez do nome do doente.',
+    'Límites': 'Limites', 'Es una ayuda para médicos formados en el manejo de estas urgencias. No sustituye al protocolo escrito de tu consulta, a las fichas técnicas, a la formación en soporte vital ni al juicio clínico. Ante la duda, llama al teléfono de emergencias.': 'É uma ajuda para médicos com formação no manejo destas urgências. Não substitui o protocolo escrito da sua consulta, os resumos das características, a formação em suporte de vida nem o juízo clínico. Em caso de dúvida, ligue para o número de emergência.'
+  }
+};
+
+/* ══ NÚCLEO DE UrgencIA (lógica pura, sin DOM: se prueba en Node con tests/test_nucleo.js).
+      Protocolos, valores de referencia con su fuente, cálculo de dosis, triaje, estado del carro e informe.
+      Los textos van en los tres idiomas como «es|en|pt»; T3() devuelve el del idioma activo.
+      Los valores de dosis son los publicados en las fuentes citadas; cada consulta los ajusta en «Protocolos» a su protocolo escrito. ══ */
+const _LI = {es: 0, en: 1, pt: 2};
+const T3 = s => { const p = String(s).split('|'); return p[_LI[typeof LANG === 'string' ? LANG : 'es']] ?? p[0]; };
+const T3f = (s, ...a) => T3(s).replace(/\{(\d)\}/g, (_, i) => a[+i]);
+const nfx = (x, d = 1) => Number(x).toLocaleString(typeof locale === 'function' ? locale() : 'es-ES', {maximumFractionDigits: d});
+const r1 = (x, d = 1) => { const f = 10 ** d; return Math.round(x * f) / f; };
+
+/* ── fuentes ── */
+const FUENTES = {
+  delorenzi: 'DeLorenzi C. New high dose pulsed hyaluronidase protocol for hyaluronic acid filler vascular adverse events. Aesthet Surg J 2017;37(7):814-825. doi:10.1093/asj/sjw251',
+  rcuk: 'Resuscitation Council UK. Emergency treatment of anaphylaxis: guidelines for healthcare providers. 2021 (actualizado 2024).',
+  asra: 'Neal JM, Neal EJ, Weinberg GL. American Society of Regional Anesthesia and Pain Medicine Local Anesthetic Systemic Toxicity checklist: 2020 version. Reg Anesth Pain Med 2021;46(1):81-82. doi:10.1136/rapm-2020-101986',
+  beleznay: 'Beleznay K, Carruthers JDA, Humphrey S, Carruthers A, Jones D. Update on avoiding and treating blindness from fillers: a recent review of the world literature. Aesthet Surg J 2019;39(6):662-674. doi:10.1093/asj/sjz053',
+  esc: 'Brignole M et al. 2018 ESC Guidelines for the diagnosis and management of syncope. Eur Heart J 2018;39(21):1883-1948. doi:10.1093/eurheartj/ehy037'
+};
+
+/* ── valores de referencia (editables en «Protocolos»): [clave, etiqueta, unidad, valor, fuente] ── */
+const CFG_DEF = {
+  tel: '112', hospital: '', consulta: '', medico: '',
+  hyaUZona: 500, hyaInterv: 60, hyaVialU: 1500, hyaVialMl: 10,
+  adrMgKg: 0.01, adrMax: 0.5, adrConc: 1, adrInterv: 5,
+  lipBoloMlKg: 1.5, lipBolo70: 100, lipPerfMlKgMin: 0.25, lipUmbral: 70, lipMaxMlKg: 12
+};
+const CFG_CAMPOS = [
+  ['ocl', 'hyaUZona', 'Hialuronidasa por zona isquémica|Hyaluronidase per ischaemic area|Hialuronidase por zona isquémica', 'U', 'delorenzi'],
+  ['ocl', 'hyaInterv', 'Intervalo entre dosis y reevaluación|Interval between doses and reassessment|Intervalo entre doses e reavaliação', 'min', 'delorenzi'],
+  ['ocl', 'hyaVialU', 'Unidades por vial de tu hialuronidasa|Units per vial of your hyaluronidase|Unidades por frasco da sua hialuronidase', 'U', null],
+  ['ocl', 'hyaVialMl', 'Volumen de reconstitución del vial|Reconstitution volume of the vial|Volume de reconstituição do frasco', 'mL', null],
+  ['ana', 'adrMgKg', 'Adrenalina intramuscular por kilo|Intramuscular adrenaline per kilo|Adrenalina intramuscular por quilo', 'mg/kg', 'rcuk'],
+  ['ana', 'adrMax', 'Dosis máxima por administración|Maximum dose per administration|Dose máxima por administração', 'mg', 'rcuk'],
+  ['ana', 'adrConc', 'Concentración de la adrenalina|Adrenaline concentration|Concentração da adrenalina', 'mg/mL', 'rcuk'],
+  ['ana', 'adrInterv', 'Repetir si no mejora a los|Repeat if no improvement after|Repetir se não melhorar aos', 'min', 'rcuk'],
+  ['last', 'lipBoloMlKg', 'Emulsión lipídica al 20 %: bolo (hasta el umbral de peso)|20% lipid emulsion: bolus (up to the weight threshold)|Emulsão lipídica a 20 %: bólus (até ao limiar de peso)', 'mL/kg', 'asra'],
+  ['last', 'lipBolo70', 'Bolo por encima del umbral de peso|Bolus above the weight threshold|Bólus acima do limiar de peso', 'mL', 'asra'],
+  ['last', 'lipPerfMlKgMin', 'Perfusión|Infusion|Perfusão', 'mL/kg/min', 'asra'],
+  ['last', 'lipUmbral', 'Umbral de peso|Weight threshold|Limiar de peso', 'kg', 'asra'],
+  ['last', 'lipMaxMlKg', 'Dosis máxima acumulada|Maximum cumulative dose|Dose máxima acumulada', 'mL/kg', 'asra']
+];
+
+/* ── dosis (devuelven datos, no frases) ── */
+function dosisHya(c, zonas) {
+  const u = Math.max(0, Math.round(zonas)) * c.hyaUZona, uml = c.hyaVialU / c.hyaVialMl;
+  return {u, ml: uml > 0 ? u / uml : NaN, viales: c.hyaVialU > 0 ? Math.ceil(u / c.hyaVialU) : NaN, uml};
+}
+function dosisAdr(c, kg) {
+  const bruto = c.adrMgKg * kg, mg = Math.min(bruto, c.adrMax);
+  return {mg: r1(mg, 2), ml: r1(mg / c.adrConc, 2), topado: bruto > c.adrMax};
+}
+function dosisLip(c, kg) {
+  const alto = kg > c.lipUmbral;
+  return {bolo: alto ? c.lipBolo70 : r1(c.lipBoloMlKg * kg, 0), perfMin: r1(c.lipPerfMlKgMin * kg, 1), perfH: r1(c.lipPerfMlKgMin * kg * 60, 0), max: r1(c.lipMaxMlKg * kg, 0), alto};
+}
+
+/* ── protocolos: pasos [id, texto, opciones] · opciones: crit (no se puede saltar), dosis ('hya'|'adr'|'lip'), rep (minutos para repetir: clave de cfg), ir (otro protocolo) ── */
+const PROT = {
+  ocl: {n: 'Oclusión vascular|Vascular occlusion|Oclusão vascular', c: '#B3203A', ic: 'flame', fuente: ['delorenzi'],
+    q: 'Blanqueamiento, livedo o dolor desproporcionado durante o tras inyectar un relleno|Blanching, livedo or disproportionate pain during or after injecting a filler|Branqueamento, livedo ou dor desproporcionada durante ou após injetar um preenchimento',
+    pasos: [
+      ['para', 'Deja de inyectar.|Stop injecting.|Pare de injetar.', {crit: 1}],
+      ['vision', 'Pregunta por la visión de cada ojo. Si hay cualquier alteración visual o neurológica, cambia al protocolo de pérdida de visión.|Ask about vision in each eye. If there is any visual or neurological change, switch to the loss-of-vision protocol.|Pergunte pela visão de cada olho. Se houver qualquer alteração visual ou neurológica, mude para o protocolo de perda de visão.', {crit: 1, ir: 'vis'}],
+      ['valora', 'Valora y fotografía la zona: palidez, livedo, relleno capilar de más de 3 segundos y extensión.|Assess and photograph the area: pallor, livedo, capillary refill over 3 seconds and extent.|Avalie e fotografe a zona: palidez, livedo, preenchimento capilar superior a 3 segundos e extensão.', {}],
+      ['hya', 'Hialuronidasa a dosis alta infiltrada en todo el territorio isquémico, no solo en el punto de inyección.|High-dose hyaluronidase infiltrated throughout the ischaemic territory, not just at the injection point.|Hialuronidase em dose alta infiltrada em todo o território isquémico, não só no ponto de injeção.', {crit: 1, dosis: 'hya', rep: 'hyaInterv'}],
+      ['masaje', 'Masaje firme de la zona y calor local. No apliques frío.|Firm massage of the area and local warmth. Do not apply cold.|Massagem firme da zona e calor local. Não aplique frio.', {}],
+      ['reeval', 'Reevalúa color y relleno capilar en cada intervalo y repite la hialuronidasa hasta la reperfusión.|Reassess colour and capillary refill at each interval and repeat hyaluronidase until reperfusion.|Reavalie a cor e o preenchimento capilar em cada intervalo e repita a hialuronidase até à reperfusão.', {}],
+      ['deriva', 'Si el relleno no es ácido hialurónico o no hay mejoría: derivación urgente.|If the filler is not hyaluronic acid or there is no improvement: urgent referral.|Se o preenchimento não for ácido hialurónico ou não houver melhoria: referenciação urgente.', {}],
+      ['alta', 'Antes del alta: informa a la paciente, entrega instrucciones por escrito y un teléfono de contacto, y cita revisión en 24 horas.|Before discharge: inform the patient, give written instructions and a contact number, and book a review within 24 hours.|Antes da alta: informe a doente, entregue instruções por escrito e um telefone de contacto, e marque revisão em 24 horas.', {}]
+    ]},
+  vis: {n: 'Pérdida de visión o síntomas neurológicos|Loss of vision or neurological symptoms|Perda de visão ou sintomas neurológicos', c: '#7A1230', ic: 'eye', fuente: ['beleznay'],
+    q: 'Alteración de la visión, dolor ocular, ptosis, o debilidad, habla o asimetría facial nuevas tras un relleno|Visual change, eye pain, ptosis, or new weakness, speech or facial asymmetry after a filler|Alteração da visão, dor ocular, ptose, ou fraqueza, fala ou assimetria facial novas após um preenchimento',
+    pasos: [
+      ['para', 'Deja de inyectar y anota la hora exacta de inicio.|Stop injecting and note the exact time of onset.|Pare de injetar e anote a hora exata de início.', {crit: 1}],
+      ['112', 'Llama al teléfono de emergencias: posible embolia arterial por relleno.|Call the emergency number: possible arterial embolism from filler.|Ligue para o número de emergência: possível embolia arterial por preenchimento.', {crit: 1}],
+      ['explora', 'Explora la agudeza visual de cada ojo, el dolor ocular, la ptosis y los movimientos oculares, y busca signos de ictus: cara, brazo y habla.|Examine visual acuity in each eye, eye pain, ptosis and eye movements, and look for stroke signs: face, arm and speech.|Examine a acuidade visual de cada olho, a dor ocular, a ptose e os movimentos oculares, e procure sinais de AVC: face, braço e fala.', {}],
+      ['traslado', 'Traslado inmediato a un hospital con oftalmología y neurología de guardia. Ningún tratamiento local debe retrasarlo.|Immediate transfer to a hospital with on-call ophthalmology and neurology. No local treatment should delay it.|Transferência imediata para um hospital com oftalmologia e neurologia de urgência. Nenhum tratamento local a deve atrasar.', {crit: 1}],
+      ['piel', 'Si el relleno es ácido hialurónico, trata la piel isquémica con hialuronidasa mientras llega el traslado, sin retrasarlo.|If the filler is hyaluronic acid, treat the ischaemic skin with hyaluronidase while the transfer arrives, without delaying it.|Se o preenchimento for ácido hialurónico, trate a pele isquémica com hialuronidase enquanto chega a transferência, sem a atrasar.', {dosis: 'hya'}],
+      ['info', 'Prepara para el equipo receptor el producto, el lote, el volumen, la zona, la técnica y la hora de inicio: es el informe de traslado.|Prepare for the receiving team the product, batch, volume, area, technique and time of onset: this is the transfer report.|Prepare para a equipa recetora o produto, o lote, o volume, a zona, a técnica e a hora de início: é o relatório de transferência.', {}]
+    ]},
+  ana: {n: 'Anafilaxia|Anaphylaxis|Anafilaxia', c: '#C2410C', ic: 'shield', fuente: ['rcuk'],
+    q: 'Problema respiratorio o circulatorio de inicio brusco, a menudo con habones o angioedema|Sudden breathing or circulation problem, often with hives or angioedema|Problema respiratório ou circulatório de início súbito, frequentemente com urticária ou angioedema',
+    pasos: [
+      ['para', 'Detén el tratamiento y retira el desencadenante si es posible.|Stop the treatment and remove the trigger if possible.|Interrompa o tratamento e retire o desencadeante se possível.', {crit: 1}],
+      ['112', 'Llama al teléfono de emergencias.|Call the emergency number.|Ligue para o número de emergência.', {crit: 1}],
+      ['adr', 'Adrenalina intramuscular en la cara anterolateral del muslo.|Intramuscular adrenaline in the anterolateral thigh.|Adrenalina intramuscular na face anterolateral da coxa.', {crit: 1, dosis: 'adr', rep: 'adrInterv'}],
+      ['pos', 'Posición: tumbado con las piernas elevadas; sentado si le cuesta respirar; embarazada, sobre el lado izquierdo. No lo pongas de pie.|Position: lying flat with legs raised; sitting up if breathing is difficult; pregnant, on the left side. Do not stand them up.|Posição: deitado com as pernas elevadas; sentado se tiver dificuldade em respirar; grávida, sobre o lado esquerdo. Não o ponha de pé.', {}],
+      ['o2', 'Oxígeno a alto flujo. Vía venosa y bolo de cristaloide si hay hipotensión (en adultos, 500 a 1000 mL).|High-flow oxygen. IV access and a crystalloid bolus if hypotensive (adults, 500 to 1000 mL).|Oxigénio de alto débito. Acesso venoso e bólus de cristaloide se houver hipotensão (adultos, 500 a 1000 mL).', {}],
+      ['refr', 'Si no mejora tras dos dosis de adrenalina intramuscular: anafilaxia refractaria, soporte avanzado.|If no improvement after two doses of intramuscular adrenaline: refractory anaphylaxis, advanced support.|Se não melhorar após duas doses de adrenalina intramuscular: anafilaxia refratária, suporte avançado.', {}],
+      ['obs', 'Tras la mejoría, traslado para observación hospitalaria: puede haber una reacción bifásica. Antihistamínicos y corticoides no son de primera línea.|After improvement, transfer for hospital observation: a biphasic reaction is possible. Antihistamines and steroids are not first line.|Após a melhoria, transferência para observação hospitalar: pode haver uma reação bifásica. Anti-histamínicos e corticoides não são de primeira linha.', {}]
+    ]},
+  last: {n: 'Toxicidad por anestésico local|Local anaesthetic toxicity|Toxicidade por anestésico local', c: '#6D28D9', ic: 'cpu', fuente: ['asra'],
+    q: 'Hormigueo peribucal, sabor metálico, acúfenos, confusión, convulsión o arritmia tras un anestésico local|Perioral tingling, metallic taste, tinnitus, confusion, seizure or arrhythmia after a local anaesthetic|Formigueiro perioral, sabor metálico, zumbidos, confusão, convulsão ou arritmia após um anestésico local',
+    pasos: [
+      ['para', 'Detén la inyección de anestésico.|Stop injecting the anaesthetic.|Interrompa a injeção de anestésico.', {crit: 1}],
+      ['112', 'Pide ayuda, llama al teléfono de emergencias y trae la emulsión lipídica al 20 %.|Call for help, call the emergency number and bring the 20% lipid emulsion.|Peça ajuda, ligue para o número de emergência e traga a emulsão lipídica a 20 %.', {crit: 1}],
+      ['aerea', 'Vía aérea: oxígeno al 100 % y ventilación si hace falta.|Airway: 100% oxygen and ventilation if needed.|Via aérea: oxigénio a 100 % e ventilação se necessário.', {crit: 1}],
+      ['conv', 'Convulsiones: benzodiacepina. Evita el propofol si hay inestabilidad cardiovascular.|Seizures: benzodiazepine. Avoid propofol if there is cardiovascular instability.|Convulsões: benzodiazepina. Evite o propofol se houver instabilidade cardiovascular.', {}],
+      ['lip', 'Emulsión lipídica al 20 %: bolo en 2 a 3 minutos y después perfusión. Si sigue inestable, repite el bolo una o dos veces y dobla la perfusión.|20% lipid emulsion: bolus over 2 to 3 minutes, then infusion. If still unstable, repeat the bolus once or twice and double the infusion.|Emulsão lipídica a 20 %: bólus em 2 a 3 minutos e depois perfusão. Se continuar instável, repita o bólus uma ou duas vezes e duplique a perfusão.', {dosis: 'lip'}],
+      ['rcp', 'Si hay parada: RCP, adrenalina en dosis reducidas (1 µg/kg o menos) y evita vasopresina, antagonistas del calcio, betabloqueantes y anestésicos locales.|In cardiac arrest: CPR, reduced adrenaline doses (1 µg/kg or less), and avoid vasopressin, calcium channel blockers, beta-blockers and local anaesthetics.|Em paragem: RCP, adrenalina em doses reduzidas (1 µg/kg ou menos) e evite vasopressina, antagonistas do cálcio, bloqueadores beta e anestésicos locais.', {}],
+      ['vig', 'Vigilancia prolongada en el hospital: al menos 2 horas tras una convulsión y de 4 a 6 horas tras inestabilidad cardiovascular.|Prolonged monitoring in hospital: at least 2 hours after a seizure and 4 to 6 hours after cardiovascular instability.|Vigilância prolongada no hospital: pelo menos 2 horas após uma convulsão e 4 a 6 horas após instabilidade cardiovascular.', {}]
+    ]},
+  sin: {n: 'Síncope vasovagal|Vasovagal syncope|Síncope vasovagal', c: '#0B7268', ic: 'refresh', fuente: ['esc'],
+    q: 'Palidez, sudor, mareo y pulso lento que mejoran al tumbarse|Pallor, sweating, dizziness and slow pulse that improve on lying down|Palidez, suor, tontura e pulso lento que melhoram ao deitar',
+    pasos: [
+      ['para', 'Detén el procedimiento y retira las agujas.|Stop the procedure and remove the needles.|Interrompa o procedimento e retire as agulhas.', {crit: 1}],
+      ['pos', 'Túmbala con las piernas elevadas y afloja la ropa.|Lay her flat with legs raised and loosen clothing.|Deite-a com as pernas elevadas e desaperte a roupa.', {crit: 1}],
+      ['cte', 'Constantes: tensión, frecuencia cardiaca, saturación y glucemia capilar.|Vital signs: blood pressure, heart rate, oxygen saturation and capillary glucose.|Sinais vitais: pressão arterial, frequência cardíaca, saturação e glicemia capilar.', {}],
+      ['dif', 'Descarta anafilaxia: habones, angioedema, broncoespasmo o hipotensión con taquicardia. Si los hay, cambia de protocolo.|Rule out anaphylaxis: hives, angioedema, bronchospasm or hypotension with tachycardia. If present, switch protocol.|Exclua anafilaxia: urticária, angioedema, broncospasmo ou hipotensão com taquicardia. Se existirem, mude de protocolo.', {ir: 'ana'}],
+      ['rec', 'Debería recuperarse en uno o dos minutos. Si no, o hay dolor torácico, convulsión prolongada, focalidad o arritmia, llama al teléfono de emergencias.|She should recover in one or two minutes. If not, or if there is chest pain, prolonged seizure, focal signs or arrhythmia, call the emergency number.|Deveria recuperar em um ou dois minutos. Se não, ou se houver dor torácica, convulsão prolongada, sinais focais ou arritmia, ligue para o número de emergência.', {}],
+      ['dec', 'Reevalúa antes de decidir si continuar tumbada o posponer, y anota el antecedente.|Reassess before deciding whether to continue lying down or postpone, and record the episode.|Reavalie antes de decidir se continua deitada ou adia, e registe o antecedente.', {}]
+    ]}
+};
+const PROT_IDS = ['ocl', 'vis', 'ana', 'last', 'sin'];
+
+/* ── triaje: preguntas y reglas deterministas, en orden de prioridad ── */
+const TRI = [
+  ['vision', 'Alteración de la visión, dolor ocular, o debilidad, habla o asimetría facial nuevas|Visual change, eye pain, or new weakness, speech or facial asymmetry|Alteração da visão, dor ocular, ou fraqueza, fala ou assimetria facial novas'],
+  ['resp', 'Dificultad respiratoria, ronquera o estridor, o tensión baja con mareo|Breathing difficulty, hoarseness or stridor, or low blood pressure with dizziness|Dificuldade respiratória, rouquidão ou estridor, ou pressão baixa com tontura'],
+  ['piel', 'Habones, picor generalizado o hinchazón de labios o lengua|Hives, generalised itching or swelling of lips or tongue|Urticária, prurido generalizado ou inchaço dos lábios ou língua'],
+  ['anest', 'Hormigueo peribucal, sabor metálico, acúfenos, confusión o convulsión tras anestésico local|Perioral tingling, metallic taste, tinnitus, confusion or seizure after local anaesthetic|Formigueiro perioral, sabor metálico, zumbidos, confusão ou convulsão após anestésico local'],
+  ['isq', 'Palidez, livedo o dolor desproporcionado en la zona inyectada|Pallor, livedo or disproportionate pain in the injected area|Palidez, livedo ou dor desproporcionada na zona injetada'],
+  ['vagal', 'Palidez, sudor y pulso lento que mejoran al tumbarse|Pallor, sweating and slow pulse that improve on lying down|Palidez, suor e pulso lento que melhoram ao deitar']
+];
+function triaje(r) {
+  const o = [];
+  if (r.vision) o.push('vis');
+  if (r.resp && (r.piel || !r.vagal)) o.push('ana');
+  if (r.anest) o.push('last');
+  if (r.isq) o.push('ocl');
+  if (r.vagal && !r.piel && !r.resp) o.push('sin');
+  return o;
+}
+
+/* ── carro de urgencias ── */
+const CARRO_DEF = [
+  'Hialuronidasa|Hyaluronidase|Hialuronidase', 'Adrenalina 1 mg/mL o autoinyector|Adrenaline 1 mg/mL or auto-injector|Adrenalina 1 mg/mL ou autoinjetor',
+  'Emulsión lipídica al 20 %|20% lipid emulsion|Emulsão lipídica a 20 %', 'Oxígeno (botella llena) y mascarilla|Oxygen (full cylinder) and mask|Oxigénio (garrafa cheia) e máscara',
+  'Bolsa autoinflable con mascarilla|Self-inflating bag with mask|Insuflador manual com máscara', 'Cánulas orofaríngeas|Oropharyngeal airways|Tubos orofaríngeos',
+  'Pulsioxímetro y tensiómetro|Pulse oximeter and blood pressure monitor|Oxímetro e esfigmomanómetro', 'Glucómetro y tiras|Glucose meter and strips|Glucómetro e tiras',
+  'Suero fisiológico, sistemas y catéteres venosos|Saline, giving sets and IV cannulas|Soro fisiológico, sistemas e cateteres venosos', 'Jeringas y agujas|Syringes and needles|Seringas e agulhas',
+  'Benzodiacepina|Benzodiazepine|Benzodiazepina', 'Salbutamol inhalado|Inhaled salbutamol|Salbutamol inalado',
+  'Antihistamínico y corticoide (segunda línea)|Antihistamine and steroid (second line)|Anti-histamínico e corticoide (segunda linha)', 'Desfibrilador externo automático|Automated external defibrillator|Desfibrilhador automático externo'
+];
+const DIA = 86400000;
+function estadoCad(fecha, hoy = Date.now()) {
+  if (!fecha) return {e: 'sin', d: null};
+  const d = Math.floor((Date.parse(fecha + 'T00:00:00') - new Date(new Date(hoy).toDateString()).getTime()) / DIA);
+  return {e: isNaN(d) ? 'sin' : d < 0 ? 'cad' : d <= 30 ? 'pronto' : 'ok', d};
+}
+const carroResumen = (items, hoy) => items.reduce((a, it) => { a[estadoCad(it.cad, hoy).e]++; return a; }, {cad: 0, pronto: 0, ok: 0, sin: 0});
+
+/* ── registro: se guardan DATOS ({ts, k, prot, paso, d}) y el texto se redacta al pintar, en el idioma del momento ── */
+const primeraFrase = s => { const m = String(s).match(/^.*?[.:](\s|$)/); return (m ? m[0] : String(s)).trim().replace(/[.:]$/, ''); };
+function farmLog(e) {
+  if (e.k !== 'dosis') return '';
+  const d = e.d || {};
+  if (d.f === 'hya') return T3f('Hialuronidasa {0} U ({1} mL) en {2} zona(s)|Hyaluronidase {0} U ({1} mL) in {2} area(s)|Hialuronidase {0} U ({1} mL) em {2} zona(s)', nfx(d.u, 0), nfx(d.ml, 1), d.z);
+  if (d.f === 'adr') return T3f('Adrenalina intramuscular {0} mg ({1} mL de {2} mg/mL)|Intramuscular adrenaline {0} mg ({1} mL of {2} mg/mL)|Adrenalina intramuscular {0} mg ({1} mL de {2} mg/mL)', nfx(d.mg, 2), nfx(d.ml, 2), nfx(d.c, 2));
+  if (d.f === 'lipb') return T3f('Emulsión lipídica al 20 %: bolo de {0} mL|20% lipid emulsion: {0} mL bolus|Emulsão lipídica a 20 %: bólus de {0} mL', nfx(d.ml, 0));
+  if (d.f === 'lipp') return T3f('Emulsión lipídica al 20 %: perfusión a {0} mL/h|20% lipid emulsion: infusion at {0} mL/h|Emulsão lipídica a 20 %: perfusão a {0} mL/h', nfx(d.mlh, 0));
+  return '';
+}
+function txtLog(e) {
+  if (e.k === 'inicio') return T3f('Inicio del protocolo: {0}|Protocol started: {0}|Início do protocolo: {0}', T3(PROT[e.prot].n));
+  if (e.k === 'cambio') return T3f('Cambio al protocolo: {0}|Switched to protocol: {0}|Mudança para o protocolo: {0}', T3(PROT[e.prot].n));
+  if (e.k === 'paso') { const p = (PROT[e.prot].pasos.find(x => x[0] === e.paso) || [, ''])[1]; return primeraFrase(T3(p)); }
+  if (e.k === 'dosis') return farmLog(e);
+  if (e.k === 'nota') return String(e.d || '');
+  if (e.k === 'fin') return T3('Fin de la actuación|End of response|Fim da atuação');
+  return '';
+}
+/* ── informe de traslado (Markdown) ── */
+const hhmmss = ms => new Date(ms).toLocaleTimeString(typeof locale === 'function' ? locale() : 'es-ES', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+const rel = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `+${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+function informeMd(u, cfg, fin = Date.now()) {
+  const P = PROT[u.tipo], pac = u.pac || {}, pr = u.proc || {}, L = (a, b) => b ? `- **${T3(a)}:** ${b}\n` : '';
+  let md = (u.sim ? `> ${T3('SIMULACRO: no corresponde a un paciente real.|DRILL: does not correspond to a real patient.|SIMULACRO: não corresponde a um doente real.')}\n\n` : '');
+  md += `## ${T3('Datos|Details|Dados')}\n` + L('Urgencia|Emergency|Urgência', T3(P.n)) + L('Fecha|Date|Data', new Date(u.inicio).toLocaleDateString(typeof locale === 'function' ? locale() : 'es-ES')) +
+    L('Inicio de la actuación|Start of response|Início da atuação', hhmmss(u.inicio)) + (u.horaSint ? L('Inicio de los síntomas|Symptom onset|Início dos sintomas', u.horaSint) : '') + L('Duración hasta el informe|Time to report|Duração até ao relatório', rel(fin - u.inicio).slice(1) + ' min') +
+    L('Consulta|Clinic|Consulta', cfg.consulta) + L('Médico|Doctor|Médico', cfg.medico) + L('Hospital de referencia|Referral hospital|Hospital de referência', cfg.hospital);
+  md += `\n## ${T3('Paciente|Patient|Doente')}\n` + L('Identificador|Identifier|Identificador', pac.id) + L('Edad|Age|Idade', pac.edad) + L('Sexo|Sex|Sexo', pac.sexo) + L('Peso|Weight|Peso', pac.kg ? pac.kg + ' kg' : '') + L('Alergias|Allergies|Alergias', pac.alergias) + L('Medicación|Medication|Medicação', pac.med);
+  if (pr.producto || pr.zona || pr.volumen || pr.lote) md += `\n## ${T3('Procedimiento|Procedure|Procedimento')}\n` + L('Producto|Product|Produto', pr.producto) + L('Lote|Batch|Lote', pr.lote) + L('Zona|Area|Zona', pr.zona) + L('Volumen|Volume|Volume', pr.volumen) + L('Técnica|Technique|Técnica', pr.tecnica);
+  md += `\n## ${T3('Cronología|Timeline|Cronologia')}\n| ${T3('Hora|Time|Hora')} | ${T3('Desde el inicio|Since start|Desde o início')} | ${T3('Acción|Action|Ação')} |\n|---|---|---|\n` +
+    (u.log || []).map(e => `| ${hhmmss(e.ts)} | ${rel(e.ts - u.inicio)} | ${txtLog(e).replace(/\|/g, '/')} |`).join('\n') + '\n';
+  const fx = (u.log || []).filter(e => e.k === 'dosis');
+  if (fx.length) md += `\n## ${T3('Fármacos administrados|Drugs given|Fármacos administrados')}\n` + fx.map(e => `- ${hhmmss(e.ts)} · ${farmLog(e)}`).join('\n') + '\n';
+  if ((u.cte || []).length) md += `\n## ${T3('Constantes|Vital signs|Sinais vitais')}\n| ${T3('Hora|Time|Hora')} | TA | FC | SatO₂ | ${T3('Glucemia|Glucose|Glicemia')} |\n|---|---|---|---|---|\n` + u.cte.map(c => `| ${hhmmss(c.ts)} | ${c.ta || ''} | ${c.fc || ''} | ${c.sat || ''} | ${c.glu || ''} |`).join('\n') + '\n';
+  if (u.notas) md += `\n## ${T3('Observaciones|Notes|Observações')}\n${u.notas}\n`;
+  if (u.final) md += `\n## ${T3('Situación al traslado o al alta|Status at transfer or discharge|Situação na transferência ou alta')}\n${u.final}\n`;
+  md += `\n## ${T3('Protocolo de referencia|Reference protocol|Protocolo de referência')}\n` + P.fuente.map(f => `- ${FUENTES[f]}`).join('\n') + '\n';
+  return md;
+}
+if (typeof module !== 'undefined') module.exports = {T3, T3f, CFG_DEF, CFG_CAMPOS, FUENTES, dosisHya, dosisAdr, dosisLip, PROT, PROT_IDS, TRI, triaje, CARRO_DEF, estadoCad, carroResumen, informeMd, rel, nfx, txtLog, farmLog, primeraFrase};
+
+/* ══ UrgencIA · interfaz. La lógica (protocolos, dosis, triaje, carro, informe) está en nucleo.js.
+      Sin IA y sin conexión: no hay ninguna llamada de red. Los textos propios van como «es|en|pt» con T3();
+      los de la navegación de Forja (STEPS, NAV, GLOS, data-i18n) pasan por t() y src/i18n.js. ══ */
+const STEPS = ['Inicio', 'Urgencia', 'Informe', 'Carro', 'Protocolos'];
+const NAV = [['Siguiente: urgencia', 'Elige la urgencia: el reloj empieza a contar.'], ['Terminar e informe', 'Cada acción queda registrada con su hora.'], ['Volver al inicio', 'Completa la situación final y descarga el informe.'], ['Siguiente: protocolos', 'Revisa las caducidades cada mes.'], ['Volver al inicio', 'Ajusta los valores al protocolo de tu consulta.']];
+const RENDER = {0: pintaInicio, 1: pintaUrg, 2: pintaInforme, 3: pintaCarro, 4: pintaProt};
+const GLOS = [
+  ['¿Qué es UrgencIA?', 'La primera app del Kit EstéticIA: los protocolos de urgencia de la consulta de medicina estética en pantalla, con reloj, registro de cada acción con su hora, dosis calculadas, informe de traslado y revisión del carro.'],
+  ['Cómo se usa en una urgencia', 'Pulsa la urgencia en la portada. El reloj empieza y el registro también. Marca cada paso al hacerlo y pulsa «Administrada» al dar un fármaco: queda anotado con su hora y su dosis. Al terminar, el informe ya está escrito.'],
+  ['De dónde salen las dosis', 'De las fuentes publicadas que se citan en cada protocolo: DeLorenzi 2017 para la hialuronidasa, Resuscitation Council UK 2021 para la anafilaxia y ASRA 2020 para la toxicidad por anestésico local. Cada consulta ajusta los valores a su protocolo escrito y a sus productos en «Protocolos».'],
+  ['Modo simulacro', 'Para practicar con el equipo. Todo lo que se registra en simulacro queda marcado así, también en el informe.'],
+  ['Sin IA y sin conexión', 'La app no usa inteligencia artificial ni envía nada a ningún servidor. Funciona aunque no haya internet en la consulta, una vez abierta.'],
+  ['Privacidad', 'Todo se guarda en este navegador. Usa un identificador en lugar del nombre del paciente.'],
+  ['Límites', 'Es una ayuda para médicos formados en el manejo de estas urgencias. No sustituye al protocolo escrito de tu consulta, a las fichas técnicas, a la formación en soporte vital ni al juicio clínico. Ante la duda, llama al teléfono de emergencias.']
+];
+const S0 = () => ({cfg: {...CFG_DEF}, sim: false, urg: null, hist: [], ver: null, tri: {}, carro: {items: CARRO_DEF.map(n => ({n, q: '', cad: ''})), rev: []}, sonido: true, esEjemplo: false});
+let S = S0();
+const C = () => ({...CFG_DEF, ...S.cfg});
+const nfl = (x, d = 1) => isFinite(x) ? nfx(x, d) : '—';
+const hora = ts => hhmmss(ts);
+
+/* ── 0 · inicio ── */
+function pintaInicio() {
+  const u = S.urg;
+  $('enCurso').innerHTML = u ? `<div class="card u-encurso" style="--c:${PROT[u.tipo].c}"><b>${esc(T3f('{0} en curso desde las {1}|{0} in progress since {1}|{0} em curso desde as {1}', T3(PROT[u.tipo].n), hora(u.inicio)))}</b>${u.sim ? ` <span class="fa-chip">${esc(T3('simulacro|drill|simulacro'))}</span>` : ''}<button class="btn btn-primary" id="btnVolverUrg" type="button">${ico('right')}<span>${esc(T3('Volver a la urgencia|Back to the emergency|Voltar à urgência'))}</span></button></div>` : '';
+  $('chkSim').checked = S.sim;
+  $('uGrid').innerHTML = PROT_IDS.map(id => { const P = PROT[id]; return `<button type="button" class="u-btn" data-start="${id}" style="--c:${P.c}"><span class="u-ico">${ico(P.ic)}</span><b>${esc(T3(P.n))}</b><span>${esc(T3(P.q))}</span></button>`; }).join('');
+  pintaTri();
+  const r = carroResumen(S.carro.items), ult = S.carro.rev[S.carro.rev.length - 1], dias = ult ? Math.floor((Date.now() - ult.ts) / DIA) : null, c = C();
+  $('uAntes').innerHTML = `<button type="button" class="card u-ant" data-goto="3"><b>${esc(T3('Carro de urgencias|Emergency trolley|Carro de urgência'))}</b><span>${r.cad ? `<span class="fa-chip error">${esc(T3f('{0} caducado(s)|{0} expired|{0} expirado(s)', r.cad))}</span> ` : ''}${r.pronto ? `<span class="fa-chip aviso">${esc(T3f('{0} caduca(n) pronto|{0} expiring soon|{0} expira(m) em breve', r.pronto))}</span> ` : ''}${r.sin ? `<span class="fa-chip">${esc(T3f('{0} sin fecha|{0} without date|{0} sem data', r.sin))}</span>` : ''}${!r.cad && !r.pronto && !r.sin ? `<span class="fa-chip ok">${esc(T3('al día|up to date|em dia'))}</span>` : ''}</span><small>${esc(ult ? T3f('Última revisión hace {0} día(s)|Last check {0} day(s) ago|Última revisão há {0} dia(s)', dias) : T3('Sin revisiones registradas|No checks recorded|Sem revisões registadas'))}</small></button>
+    <button type="button" class="card u-ant" data-goto="4"><b>${esc(T3('Protocolos de tu consulta|Your clinic\'s protocols|Protocolos da sua consulta'))}</b><span>${c.hospital ? `<span class="fa-chip ok">${esc(T3('hospital de referencia anotado|referral hospital recorded|hospital de referência anotado'))}</span>` : `<span class="fa-chip aviso">${esc(T3('falta el hospital de referencia|referral hospital missing|falta o hospital de referência'))}</span>`}</span><small>${esc(T3f('Teléfono de emergencias: {0}|Emergency number: {0}|Número de emergência: {0}', c.tel))}</small></button>
+    <button type="button" class="card u-ant" data-goto="2"><b>${esc(T3('Informes anteriores|Previous reports|Relatórios anteriores'))}</b><span><span class="fa-chip">${S.hist.length}</span></span><small>${esc(T3('Urgencias y simulacros registrados en este navegador|Emergencies and drills recorded in this browser|Urgências e simulacros registados neste navegador'))}</small></button>`;
+}
+function pintaTri() {
+  const r = S.tri, res = triaje(r), alguna = Object.values(r).some(Boolean);
+  $('triBox').innerHTML = `<p class="help">${esc(T3('Marca lo que ves. Las reglas son fijas y el orden es de prioridad.|Tick what you see. The rules are fixed and listed in order of priority.|Marque o que vê. As regras são fixas e a ordem é de prioridade.'))}</p>${TRI.map(([k, q]) => `<label class="fa-chk"><input type="checkbox" data-tri="${k}" ${r[k] ? 'checked' : ''}> <span>${esc(T3(q))}</span></label>`).join('')}
+    <div aria-live="polite">${!alguna ? '' : res.length ? `<div class="u-sug">${res.map((id, i) => `<button type="button" class="btn ${i ? 'btn-ghost' : 'btn-primary'}" data-start="${id}">${ico('play')}<span>${esc(T3(PROT[id].n))}</span></button>`).join('')}</div>` : `<div class="aviso">${esc(T3('No encaja con ninguna regla. Valora vía aérea, respiración y circulación, y si hay duda llama al teléfono de emergencias.|No rule matches. Assess airway, breathing and circulation, and if in doubt call the emergency number.|Não corresponde a nenhuma regra. Avalie via aérea, respiração e circulação e, em caso de dúvida, ligue para o número de emergência.'))}</div>`}</div>`;
+  $$('[data-tri]').forEach(x => x.onchange = () => { S.tri[x.dataset.tri] = x.checked; guarda(); pintaTri(); });
+  $$('#triBox [data-start]').forEach(b => b.onclick = () => empieza(b.dataset.start));
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-start],[data-goto],#btnVolverUrg');
+  if (!b || b.closest('#triBox')) return;
+  if (b.id === 'btnVolverUrg') return go(1);
+  if (b.dataset.goto) return go(+b.dataset.goto);
+  if (b.closest('#uGrid')) empieza(b.dataset.start);
+});
+$('chkSim').onchange = () => { S.sim = $('chkSim').checked; guarda(); };
+$('btnStart').onclick = () => { $('uGrid').scrollIntoView({behavior: 'smooth', block: 'center'}); $('uGrid').querySelector('button').focus(); };
+$('btnEjemplo').onclick = () => { aplicaEjemplo(); guarda(); go(2); toast(T3('Ejemplo: un simulacro de oclusión vascular ya registrado|Example: a recorded vascular occlusion drill|Exemplo: um simulacro de oclusão vascular já registado')); };
+
+/* ── empezar, cambiar, registrar ── */
+function empieza(tipo) {
+  if (S.urg && !confirm(T3('Hay una urgencia en curso. ¿Archivarla y empezar otra?|An emergency is in progress. Archive it and start another?|Há uma urgência em curso. Arquivá-la e começar outra?'))) return go(1);
+  if (S.urg) archiva();
+  const ts = Date.now();
+  S.urg = {tipo, sim: S.sim, inicio: ts, pac: {}, proc: {}, hechos: {}, log: [{ts, k: 'inicio', prot: tipo}], cte: [], notas: '', final: '', zonas: 1, ult: {}};
+  S.esEjemplo = false; guardaYa(); go(1);
+}
+function registra(e) { S.urg.log.push({ts: Date.now(), prot: S.urg.tipo, ...e}); guardaYa(); }
+function archiva() { if (!S.urg) return; S.urg.fin = S.urg.fin || Date.now(); S.hist.unshift(S.urg); S.hist = S.hist.slice(0, 50); S.urg = null; }
+
+/* ── 1 · urgencia en curso ── */
+let _tick = null, _pitado = {};
+function pintaUrg() {
+  const u = S.urg;
+  if (!u) { $('uBarra').innerHTML = ''; $('uBox').innerHTML = `<div class="card"><p class="empty">${esc(T3('No hay ninguna urgencia en curso. Elige una en la portada.|No emergency in progress. Choose one on the home screen.|Não há nenhuma urgência em curso. Escolha uma na página inicial.'))}</p><div class="actions"><button class="btn btn-primary" type="button" data-goto="0">${ico('left')}<span>${esc(T3('Ir a la portada|Go to home|Ir para o início'))}</span></button></div></div>`; return; }
+  const P = PROT[u.tipo], c = C(), kg = +u.pac.kg || 0;
+  $('uBarra').style.setProperty('--c', P.c);
+  $('uBarra').innerHTML = `<div class="u-bt"><span class="u-bico">${ico(P.ic)}</span><div><b>${esc(T3(P.n))}</b>${u.sim ? ` <span class="fa-chip">${esc(T3('SIMULACRO|DRILL|SIMULACRO'))}</span>` : ''}<small>${esc(T3f('Inicio a las {0}|Started at {0}|Início às {0}', hora(u.inicio)))}</small></div></div>
+    <div class="u-reloj" id="uReloj" aria-live="off" aria-label="${esc(T3('Tiempo desde el inicio|Time since start|Tempo desde o início'))}">0:00</div>
+    <a class="btn u-tel" href="tel:${esc(c.tel)}">${ico('phone')}<span>${esc(c.tel)}</span></a>`;
+  const pasos = P.pasos.map(([id, tx, o], i) => {
+    const h = u.hechos[id], dosis = o.dosis ? cajaDosis(o.dosis, id, o, kg) : '';
+    return `<li class="card u-paso${h ? ' u-hecho' : ''}${o.crit ? ' u-crit' : ''}"><div class="u-pn">${h ? ico('check') : i + 1}</div><div class="u-pt"><p>${esc(T3(tx))}</p>
+      ${o.crit && !h ? `<span class="fa-chip error">${esc(T3('imprescindible|essential|imprescindível'))}</span>` : ''}${h ? `<small class="muted">${esc(T3f('Hecho a las {0}|Done at {0}|Feito às {0}', hora(h)))}</small>` : ''}${dosis}
+      <div class="actions u-acc">${!o.dosis ? (h ? '' : `<button class="btn btn-primary btn-sm" type="button" data-hecho="${id}">${ico('check')}<span>${esc(T3('Hecho|Done|Feito'))}</span></button>`) : ''}${o.ir ? `<button class="btn btn-ghost btn-sm" type="button" data-ir="${o.ir}">${ico('right')}<span>${esc(T3f('Cambiar a: {0}|Switch to: {0}|Mudar para: {0}', T3(PROT[o.ir].n)))}</span></button>` : ''}</div></div></li>`;
+  }).join('');
+  $('uBox').innerHTML = `<div class="u-cols"><ol class="u-pasos">${pasos}</ol><div class="u-lado">
+    <div class="card"><h3>${esc(T3('Paciente|Patient|Doente'))}</h3><div class="u-f2">
+      ${campo('pac', 'id', 'Identificador (no el nombre)|Identifier (not the name)|Identificador (não o nome)')}${campo('pac', 'kg', 'Peso (kg)|Weight (kg)|Peso (kg)', 'decimal')}
+      ${campo('pac', 'edad', 'Edad|Age|Idade', 'numeric')}${campo('pac', 'sexo', 'Sexo|Sex|Sexo')}${campo('pac', 'alergias', 'Alergias|Allergies|Alergias')}${campo('pac', 'med', 'Medicación|Medication|Medicação')}</div></div>
+    <div class="card"><h3>${esc(T3('Procedimiento|Procedure|Procedimento'))}</h3><div class="u-f2">
+      ${campo('proc', 'producto', 'Producto|Product|Produto')}${campo('proc', 'lote', 'Lote|Batch|Lote')}${campo('proc', 'zona', 'Zona tratada|Treated area|Zona tratada')}${campo('proc', 'volumen', 'Volumen|Volume|Volume')}${campo('proc', 'tecnica', 'Técnica (aguja o cánula)|Technique (needle or cannula)|Técnica (agulha ou cânula)')}${campo('u', 'horaSint', 'Hora de inicio de los síntomas|Time of symptom onset|Hora de início dos sintomas')}</div></div>
+    <div class="card"><h3>${esc(T3('Constantes|Vital signs|Sinais vitais'))}</h3><div class="u-f4">${['ta', 'fc', 'sat', 'glu'].map((k, i) => `<div class="field"><label for="cte_${k}">${esc(T3(['Tensión|Blood pressure|Pressão arterial', 'Frecuencia|Heart rate|Frequência', 'SatO₂|SpO₂|SatO₂', 'Glucemia|Glucose|Glicemia'][i]))}</label><input id="cte_${k}" type="text" inputmode="${k === 'ta' ? 'text' : 'decimal'}" autocomplete="off"></div>`).join('')}</div>
+      <button class="btn btn-ghost btn-sm" id="cteAdd" type="button">${ico('plus')}<span>${esc(T3('Anotar constantes|Record vital signs|Registar sinais vitais'))}</span></button>
+      ${u.cte.length ? `<div class="table-wrap"><table><tr><th>${esc(T3('Hora|Time|Hora'))}</th><th>TA</th><th>FC</th><th>SatO₂</th><th>${esc(T3('Glu|Glu|Glic'))}</th></tr>${u.cte.map(x => `<tr><td>${hora(x.ts)}</td><td>${esc(x.ta)}</td><td>${esc(x.fc)}</td><td>${esc(x.sat)}</td><td>${esc(x.glu)}</td></tr>`).join('')}</table></div>` : ''}</div>
+    <div class="card"><h3>${esc(T3('Nota en el registro|Note in the log|Nota no registo'))}</h3><div class="u-nota"><input id="notaTxt" type="text" autocomplete="off" aria-label="${esc(T3('Nota|Note|Nota'))}"><button class="btn btn-ghost btn-sm" id="notaAdd" type="button">${ico('plus')}<span>${esc(T3('Añadir|Add|Adicionar'))}</span></button></div></div>
+    <div class="card"><h3>${esc(T3('Registro|Log|Registo'))} <span class="fa-chip">${u.log.length}</span></h3><ol class="u-log">${u.log.slice().reverse().map(e => `<li><code>${hora(e.ts)}</code> <span class="muted">${rel(e.ts - u.inicio)}</span> ${esc(txtLog(e))}</li>`).join('')}</ol>
+      ${u.log.length > 1 ? `<button class="btn btn-ghost btn-sm" id="deshacer" type="button">${ico('x')}<span>${esc(T3('Deshacer el último registro|Undo the last entry|Desfazer o último registo'))}</span></button>` : ''}</div>
+    <div class="card"><label class="fa-chk"><input type="checkbox" id="chkSon" ${S.sonido ? 'checked' : ''}> <span>${esc(T3('Aviso sonoro al cumplirse un intervalo|Sound alert when an interval is due|Aviso sonoro ao cumprir-se um intervalo'))}</span></label></div>
+  </div></div>`;
+  enlazaUrg(); tick(); clearInterval(_tick); _tick = setInterval(tick, 1000);
+}
+function campo(obj, k, lab, im) {
+  const v = obj === 'u' ? S.urg[k] : S.urg[obj][k];
+  return `<div class="field"><label for="f_${obj}_${k}">${esc(T3(lab))}</label><input id="f_${obj}_${k}" data-o="${obj}" data-k="${k}" type="text" ${im ? `inputmode="${im}"` : ''} value="${esc(v || '')}" autocomplete="off"></div>`;
+}
+function cajaDosis(tipo, id, o, kg) {
+  const c = C(), u = S.urg, ult = u.ult[id], n = u.log.filter(e => e.k === 'dosis' && e.paso === id).length, falta = T3('Escribe el peso del paciente para calcular la dosis.|Enter the patient\'s weight to calculate the dose.|Escreva o peso do doente para calcular a dose.');
+  let h = '', btn = '';
+  if (tipo === 'hya') {
+    const d = dosisHya(c, u.zonas);
+    h = `<div class="field u-z"><label for="zonas">${esc(T3('Zonas isquémicas afectadas|Ischaemic areas affected|Zonas isquémicas afetadas'))}</label><select id="zonas">${[1, 2, 3, 4].map(z => `<option ${u.zonas === z ? 'selected' : ''}>${z}</option>`).join('')}</select></div>
+      <div class="u-dosis"><b>${nfl(d.u, 0)} U</b><span>${esc(T3f('{0} mL con tu vial de {1} U en {2} mL ({3} vial/es)|{0} mL with your {1} U vial in {2} mL ({3} vial/s)|{0} mL com o seu frasco de {1} U em {2} mL ({3} frasco/s)', nfl(d.ml, 1), nfl(c.hyaVialU, 0), nfl(c.hyaVialMl, 1), d.viales))}</span><small>${esc(T3f('{0} U por zona · DeLorenzi 2017|{0} U per area · DeLorenzi 2017|{0} U por zona · DeLorenzi 2017', nfl(c.hyaUZona, 0)))}</small></div>`;
+    btn = `<button class="btn btn-primary btn-sm" type="button" data-dosis="hya" data-paso="${id}">${ico('check')}<span>${esc(T3f('Administrada: {0} U|Given: {0} U|Administrada: {0} U', nfl(d.u, 0)))}</span></button>`;
+  } else if (tipo === 'adr') {
+    if (!kg) h = `<div class="aviso">${esc(falta)} ${esc(T3f('En adultos, la dosis habitual es {0} mg.|In adults, the usual dose is {0} mg.|Em adultos, a dose habitual é {0} mg.', nfl(c.adrMax, 2)))}</div>`;
+    const d = dosisAdr(c, kg || c.adrMax / c.adrMgKg);
+    h += `<div class="u-dosis"><b>${nfl(d.mg, 2)} mg</b><span>${esc(T3f('{0} mL de adrenalina {1} mg/mL, intramuscular|{0} mL of adrenaline {1} mg/mL, intramuscular|{0} mL de adrenalina {1} mg/mL, intramuscular', nfl(d.ml, 2), nfl(c.adrConc, 2)))}</span><small>${esc(T3f('{0} mg/kg, máximo {1} mg · RCUK 2021|{0} mg/kg, maximum {1} mg · RCUK 2021|{0} mg/kg, máximo {1} mg · RCUK 2021', nfl(c.adrMgKg, 3), nfl(c.adrMax, 2)))}${kg ? '' : ' · ' + esc(T3('dosis de adulto|adult dose|dose de adulto'))}</small></div>`;
+    btn = `<button class="btn btn-primary btn-sm" type="button" data-dosis="adr" data-paso="${id}">${ico('check')}<span>${esc(T3f('Administrada: {0} mg|Given: {0} mg|Administrada: {0} mg', nfl(d.mg, 2)))}</span></button>`;
+  } else if (tipo === 'lip') {
+    if (!kg) return `<div class="aviso">${esc(falta)}</div>`;
+    const d = dosisLip(c, kg), dado = u.log.filter(e => e.k === 'dosis' && e.d.f === 'lipb').reduce((a, e) => a + e.d.ml, 0);
+    h = `<div class="u-dosis"><b>${esc(T3f('Bolo {0} mL|Bolus {0} mL|Bólus {0} mL', nfl(d.bolo, 0)))}</b><span>${esc(d.alto ? T3f('Perfusión de 200 a 250 mL en 15 a 20 minutos (más de {0} kg)|Infusion of 200 to 250 mL over 15 to 20 minutes (over {0} kg)|Perfusão de 200 a 250 mL em 15 a 20 minutos (mais de {0} kg)', nfl(c.lipUmbral, 0)) : T3f('Perfusión {0} mL/min ({1} mL/h)|Infusion {0} mL/min ({1} mL/h)|Perfusão {0} mL/min ({1} mL/h)', nfl(d.perfMin, 1), nfl(d.perfH, 0)))}</span><small>${esc(T3f('Máximo acumulado {0} mL · bolos dados {1} mL · ASRA 2020|Cumulative maximum {0} mL · boluses given {1} mL · ASRA 2020|Máximo acumulado {0} mL · bólus dados {1} mL · ASRA 2020', nfl(d.max, 0), nfl(dado, 0)))}</small></div>`;
+    btn = `<button class="btn btn-primary btn-sm" type="button" data-dosis="lipb" data-paso="${id}">${ico('check')}<span>${esc(T3f('Bolo administrado: {0} mL|Bolus given: {0} mL|Bólus administrado: {0} mL', nfl(d.bolo, 0)))}</span></button>${d.alto ? '' : `<button class="btn btn-ghost btn-sm" type="button" data-dosis="lipp" data-paso="${id}">${ico('play')}<span>${esc(T3('Perfusión iniciada|Infusion started|Perfusão iniciada'))}</span></button>`}`;
+  }
+  const rep = o.rep && ult ? `<div class="u-cd" data-cd="${id}" data-hasta="${ult + C()[o.rep] * 60000}"></div>` : '';
+  return h + (n ? `<small class="muted">${esc(T3f('Dosis registradas: {0}|Doses recorded: {0}|Doses registadas: {0}', n))}</small>` : '') + rep + `<div class="actions u-acc">${btn}</div>`;
+}
+function enlazaUrg() {
+  const u = S.urg;
+  $$('[data-hecho]').forEach(b => b.onclick = () => { const id = b.dataset.hecho; u.hechos[id] = Date.now(); registra({k: 'paso', paso: id}); pintaUrg(); });
+  $$('[data-ir]').forEach(b => b.onclick = () => { u.tipo = b.dataset.ir; registra({k: 'cambio', prot: u.tipo}); pintaUrg(); toast(T3(PROT[u.tipo].n)); });
+  $$('[data-dosis]').forEach(b => b.onclick = () => {
+    const f = b.dataset.dosis, id = b.dataset.paso, c = C(), kg = +u.pac.kg || 0; let d;
+    if (f === 'hya') { const x = dosisHya(c, u.zonas); d = {f, u: x.u, ml: x.ml, z: u.zonas}; }
+    if (f === 'adr') { const x = dosisAdr(c, kg || c.adrMax / c.adrMgKg); d = {f, mg: x.mg, ml: x.ml, c: c.adrConc}; }
+    if (f === 'lipb') d = {f, ml: dosisLip(c, kg).bolo};
+    if (f === 'lipp') d = {f, mlh: dosisLip(c, kg).perfH};
+    u.hechos[id] = u.hechos[id] || Date.now(); u.ult[id] = Date.now(); delete _pitado[id];
+    registra({k: 'dosis', paso: id, d}); pintaUrg();
+  });
+  $$('#uBox [data-o]').forEach(x => x.oninput = () => { const o = x.dataset.o, k = x.dataset.k; if (o === 'u') u[k] = x.value; else u[o][k] = x.value; guarda(); if (k === 'kg') { clearTimeout(x._t); x._t = setTimeout(() => { const pos = document.activeElement?.id; pintaUrg(); if (pos && $(pos)) { $(pos).focus(); const v = $(pos).value; $(pos).setSelectionRange(v.length, v.length); } }, 600); } });
+  if ($('zonas')) $('zonas').onchange = () => { u.zonas = +$('zonas').value; guarda(); pintaUrg(); };
+  $('cteAdd').onclick = () => { const x = {ts: Date.now()}; let alguna = false; ['ta', 'fc', 'sat', 'glu'].forEach(k => { x[k] = $('cte_' + k).value.trim(); if (x[k]) alguna = true; }); if (!alguna) return toast(T3('Escribe al menos una constante|Enter at least one vital sign|Escreva pelo menos um sinal vital')); u.cte.push(x); guardaYa(); pintaUrg(); };
+  $('notaAdd').onclick = () => { const v = $('notaTxt').value.trim(); if (!v) return; registra({k: 'nota', d: v}); pintaUrg(); };
+  $('notaTxt').onkeydown = e => { if (e.key === 'Enter') $('notaAdd').click(); };
+  if ($('deshacer')) $('deshacer').onclick = () => { const e = u.log.pop(); if (e.k === 'paso' || (e.k === 'dosis' && !u.log.some(x => x.paso === e.paso))) delete u.hechos[e.paso]; guardaYa(); pintaUrg(); };
+  $('chkSon').onchange = () => { S.sonido = $('chkSon').checked; guarda(); };
+}
+function tick() {
+  if (step !== 1 || !S.urg) { clearInterval(_tick); return; }
+  const s = Math.floor((Date.now() - S.urg.inicio) / 1000);
+  if ($('uReloj')) $('uReloj').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  $$('[data-cd]').forEach(el => {
+    const r = Math.round((+el.dataset.hasta - Date.now()) / 1000), id = el.dataset.cd;
+    el.classList.toggle('u-ya', r <= 0);
+    el.textContent = r > 0 ? T3f('Siguiente reevaluación en {0}|Next reassessment in {0}|Próxima reavaliação em {0}', mmss(r)) : T3f('Toca reevaluar y, si no ha mejorado, repetir la dosis (hace {0})|Time to reassess and, if not improved, repeat the dose ({0} ago)|É altura de reavaliar e, se não melhorou, repetir a dose (há {0})', mmss(-r));
+    if (r <= 0 && !_pitado[id]) { _pitado[id] = 1; pita(); }
+  });
+}
+function pita() {
+  if (!S.sonido) return;
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; o.connect(g); g.connect(a.destination); g.gain.setValueAtTime(0.2, a.currentTime); o.start(); o.stop(a.currentTime + 0.6); } catch (e) {}
+  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+}
+
+/* ── 2 · informe ── */
+function mdHtml(md) {   // Markdown mínimo del informe: títulos, listas, tablas, cita y negrita
+  const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  const out = []; let tabla = null;
+  for (const l of md.split('\n')) {
+    if (/^\|/.test(l)) { if (/^\|[-| ]+\|$/.test(l)) continue; const c = l.slice(1, -1).split('|').map(x => x.trim()); if (!tabla) { tabla = [c]; } else tabla.push(c); continue; }
+    if (tabla) { out.push(`<div class="table-wrap"><table>${tabla.map((f, i) => `<tr>${f.map(x => i ? `<td>${inl(x)}</td>` : `<th>${inl(x)}</th>`).join('')}</tr>`).join('')}</table></div>`); tabla = null; }
+    if (/^## /.test(l)) out.push(`<h3>${inl(l.slice(3))}</h3>`);
+    else if (/^> /.test(l)) out.push(`<div class="aviso">${inl(l.slice(2))}</div>`);
+    else if (/^- /.test(l)) out.push(`<p class="u-li">${inl(l.slice(2))}</p>`);
+    else if (l.trim()) out.push(`<p>${inl(l)}</p>`);
+  }
+  if (tabla) out.push(`<div class="table-wrap"><table>${tabla.map((f, i) => `<tr>${f.map(x => i ? `<td>${inl(x)}</td>` : `<th>${inl(x)}</th>`).join('')}</tr>`).join('')}</table></div>`);
+  return out.join('');
+}
+const episodio = () => S.ver !== null && S.hist[S.ver] ? S.hist[S.ver] : S.urg;
+function pintaInforme() {
+  const u = episodio();
+  const hist = S.hist.length ? `<div class="card"><h3>${esc(T3('Informes anteriores|Previous reports|Relatórios anteriores'))}</h3><div class="table-wrap"><table><tr><th>${esc(T3('Fecha|Date|Data'))}</th><th>${esc(T3('Urgencia|Emergency|Urgência'))}</th><th></th></tr>${S.hist.map((h, i) => `<tr${S.ver === i ? ' class="u-sel"' : ''}><td>${new Date(h.inicio).toLocaleString(locale())}</td><td>${esc(T3(PROT[h.tipo].n))}${h.sim ? ` <span class="fa-chip">${esc(T3('simulacro|drill|simulacro'))}</span>` : ''}</td><td><button class="btn btn-ghost btn-sm" type="button" data-verh="${i}">${esc(T3('Ver|View|Ver'))}</button></td></tr>`).join('')}</table></div></div>` : '';
+  if (!u) { $('infBox').innerHTML = `<div class="card"><p class="empty">${esc(T3('Aún no hay ningún informe. Empieza una urgencia o un simulacro en la portada, o abre el ejemplo.|There is no report yet. Start an emergency or drill on the home screen, or open the example.|Ainda não há nenhum relatório. Comece uma urgência ou um simulacro na página inicial, ou abra o exemplo.'))}</p></div>` + hist; enlazaInf(); return; }
+  const actual = u === S.urg, md = informeMd(u, C(), u.fin || Date.now());
+  $('infBox').innerHTML = `${actual ? `<div class="card"><div class="field"><label for="infFinal">${esc(T3('Situación al traslado o al alta|Status at transfer or discharge|Situação na transferência ou alta'))}</label><textarea id="infFinal" rows="3">${esc(u.final || '')}</textarea></div><div class="field"><label for="infNotas">${esc(T3('Observaciones|Notes|Observações'))}</label><textarea id="infNotas" rows="2">${esc(u.notas || '')}</textarea></div></div>` : `<div class="card"><button class="btn btn-ghost btn-sm" type="button" id="verActual">${ico('left')}<span>${esc(T3('Volver al informe actual|Back to the current report|Voltar ao relatório atual'))}</span></button></div>`}
+    <div class="card u-informe" id="infDoc"><h2>${esc(T3('Informe de traslado|Transfer report|Relatório de transferência'))}</h2>${mdHtml(md)}</div>
+    <div class="card"><div class="actions" style="margin-top:0"><button class="btn btn-word" id="infWord" type="button">${ico('doc')}<span>Word</span></button><button class="btn btn-ghost" id="infPrint" type="button">${ico('print')}<span>${esc(T3('Imprimir o PDF|Print or PDF|Imprimir ou PDF'))}</span></button><button class="btn btn-ghost" id="infCopy" type="button">${ico('copy')}<span>${esc(T3('Copiar texto|Copy text|Copiar texto'))}</span></button>${actual ? `<button class="btn btn-ghost" id="infCerrar" type="button">${ico('archive')}<span>${esc(T3('Terminar y archivar|Finish and archive|Terminar e arquivar'))}</span></button>` : ''}</div></div>` + hist;
+  enlazaInf(md, u);
+}
+function enlazaInf(md, u) {
+  $$('[data-verh]').forEach(b => b.onclick = () => { S.ver = +b.dataset.verh; guarda(); pintaInforme(); });
+  if (!u) return;
+  if ($('verActual')) $('verActual').onclick = () => { S.ver = null; guarda(); pintaInforme(); };
+  ['infFinal', 'infNotas'].forEach(id => { if ($(id)) $(id).oninput = () => { u[id === 'infFinal' ? 'final' : 'notas'] = $(id).value; guarda(); clearTimeout($(id)._t); $(id)._t = setTimeout(() => { $('infDoc').innerHTML = `<h2>${esc(T3('Informe de traslado|Transfer report|Relatório de transferência'))}</h2>` + mdHtml(informeMd(u, C(), u.fin || Date.now())); }, 400); }; });
+  const titulo = () => T3('Informe de traslado|Transfer report|Relatório de transferência') + ' · ' + T3(PROT[u.tipo].n);
+  $('infWord').onclick = async () => { try { dl(`informe_${new Date(u.inicio).toISOString().slice(0, 10)}.docx`, await wordDeMarkdown(informeMd(u, C(), u.fin || Date.now()), {titulo: titulo(), subtitulo: new Date(u.inicio).toLocaleString(locale()), pie: T3('Generado con UrgencIA (Kit EstéticIA). Herramienta de apoyo: no sustituye al protocolo escrito de la consulta ni al juicio clínico.|Generated with UrgencIA (EstéticIA Kit). Support tool: it does not replace the clinic\'s written protocol or clinical judgement.|Gerado com o UrgencIA (Kit EstéticIA). Ferramenta de apoio: não substitui o protocolo escrito da consulta nem o juízo clínico.')})); } catch (e) { toast(e.message, 7000); } };
+  $('infPrint').onclick = () => window.print();
+  $('infCopy').onclick = async () => { const tx = titulo() + '\n\n' + informeMd(u, C(), u.fin || Date.now()); try { await navigator.clipboard.writeText(tx); toast(T3('Informe copiado|Report copied|Relatório copiado')); } catch (e) { dl('informe.txt', tx, 'text/plain;charset=utf-8'); } };
+  if ($('infCerrar')) $('infCerrar').onclick = () => { if (!confirm(T3('¿Terminar la actuación y archivar el informe?|Finish the response and archive the report?|Terminar a atuação e arquivar o relatório?'))) return; registra({k: 'fin'}); archiva(); S.ver = 0; guardaYa(); pintaInforme(); toast(T3('Informe archivado|Report archived|Relatório arquivado')); };
+}
+
+/* ── 3 · carro ── */
+const EST_N = {cad: ['error', 'caducado|expired|expirado'], pronto: ['aviso', 'caduca pronto|expiring soon|expira em breve'], ok: ['ok', 'en fecha|in date|dentro do prazo'], sin: ['', 'sin fecha|no date|sem data']};
+function pintaCarro() {
+  const K = S.carro, r = carroResumen(K.items), ult = K.rev[K.rev.length - 1], dias = ult ? Math.floor((Date.now() - ult.ts) / DIA) : null;
+  $('carBox').innerHTML = `<div class="card"><div class="u-res">${['cad', 'pronto', 'ok', 'sin'].map(k => `<span class="fa-chip ${EST_N[k][0]}">${r[k]} ${esc(T3(EST_N[k][1]))}</span>`).join(' ')}</div>
+      ${dias === null || dias > 31 ? `<div class="aviso">${esc(dias === null ? T3('Aún no hay ninguna revisión registrada.|No check recorded yet.|Ainda não há nenhuma revisão registada.') : T3f('La última revisión fue hace {0} días: toca revisar.|The last check was {0} days ago: a check is due.|A última revisão foi há {0} dias: é altura de rever.', dias))}</div>` : `<div class="okbox">${esc(T3f('Última revisión hace {0} día(s), por {1}.|Last check {0} day(s) ago, by {1}.|Última revisão há {0} dia(s), por {1}.', dias, ult.quien || '—'))}</div>`}
+      <div class="table-wrap"><table class="u-carro"><tr><th>${esc(T3('Elemento|Item|Elemento'))}</th><th>${esc(T3('Cantidad|Quantity|Quantidade'))}</th><th>${esc(T3('Caducidad|Expiry|Validade'))}</th><th>${esc(T3('Estado|Status|Estado'))}</th><th></th></tr>
+      ${K.items.map((it, i) => { const e = estadoCad(it.cad); return `<tr><td><input type="text" data-ci="${i}" data-ck="n" value="${esc(T3(it.n))}" aria-label="${esc(T3('Elemento|Item|Elemento'))}"></td><td><input type="text" inputmode="numeric" data-ci="${i}" data-ck="q" value="${esc(it.q)}" aria-label="${esc(T3('Cantidad|Quantity|Quantidade'))}" class="u-q"></td><td><input type="date" data-ci="${i}" data-ck="cad" value="${esc(it.cad)}" aria-label="${esc(T3('Caducidad|Expiry|Validade'))}"></td><td><span class="fa-chip ${EST_N[e.e][0]}">${esc(T3(EST_N[e.e][1]))}${e.d !== null && e.e !== 'ok' && e.e !== 'sin' ? ' · ' + (e.d < 0 ? T3f('hace {0} d|{0} d ago|há {0} d', -e.d) : T3f('{0} d|{0} d|{0} d', e.d)) : ''}</span></td><td><button class="btn btn-ghost btn-sm" type="button" data-cdel="${i}" aria-label="${esc(T3('Quitar|Remove|Remover'))}">${ico('trash')}</button></td></tr>`; }).join('')}</table></div>
+      <div class="actions"><button class="btn btn-ghost" id="carAdd" type="button">${ico('plus')}<span>${esc(T3('Añadir elemento|Add item|Adicionar elemento'))}</span></button><button class="btn btn-ghost" id="carCsv" type="button">CSV</button></div></div>
+    <div class="card"><h3>${esc(T3('Registrar la revisión de hoy|Record today\'s check|Registar a revisão de hoje'))}</h3><div class="u-nota"><input id="carQuien" type="text" autocomplete="off" placeholder="${esc(T3('Iniciales de quien revisa|Initials of the person checking|Iniciais de quem revê'))}" aria-label="${esc(T3('Iniciales de quien revisa|Initials of the person checking|Iniciais de quem revê'))}"><button class="btn btn-primary btn-sm" id="carRev" type="button">${ico('check')}<span>${esc(T3('Registrar revisión|Record check|Registar revisão'))}</span></button></div>
+      ${K.rev.length ? `<ul class="fa-ul">${K.rev.slice().reverse().slice(0, 12).map(x => `<li>${new Date(x.ts).toLocaleDateString(locale())} · ${esc(x.quien || '—')} · ${esc(T3f('{0} caducado(s), {1} caduca(n) pronto|{0} expired, {1} expiring soon|{0} expirado(s), {1} expira(m) em breve', x.r.cad, x.r.pronto))}</li>`).join('')}</ul>` : ''}</div>`;
+  $$('[data-ci]').forEach(x => x.onchange = () => { const it = K.items[+x.dataset.ci], k = x.dataset.ck; it[k] = x.value; guarda(); if (k === 'cad') pintaCarro(); });
+  $$('[data-cdel]').forEach(b => b.onclick = () => { K.items.splice(+b.dataset.cdel, 1); guarda(); pintaCarro(); });
+  $('carAdd').onclick = () => { K.items.push({n: '', q: '', cad: ''}); guarda(); pintaCarro(); const xs = $$('[data-ck="n"]'); xs[xs.length - 1].focus(); };
+  $('carRev').onclick = () => { K.rev.push({ts: Date.now(), quien: $('carQuien').value.trim(), r: carroResumen(K.items)}); guardaYa(); pintaCarro(); toast(T3('Revisión registrada|Check recorded|Revisão registada')); };
+  $('carCsv').onclick = () => dl('carro_urgencias.csv', csvDe([T3('elemento|item|elemento'), T3('cantidad|quantity|quantidade'), T3('caducidad|expiry|validade'), T3('estado|status|estado')], K.items.map(it => [T3(it.n), it.q, it.cad, T3(EST_N[estadoCad(it.cad).e][1])])), 'text/csv;charset=utf-8');
+}
+
+/* ── 4 · protocolos ── */
+function pintaProt() {
+  const c = C(), gen = [['consulta', 'Nombre de la consulta|Clinic name|Nome da consulta'], ['medico', 'Médico responsable|Responsible doctor|Médico responsável'], ['tel', 'Teléfono de emergencias|Emergency number|Número de emergência'], ['hospital', 'Hospital de referencia con oftalmología y neurología de guardia|Referral hospital with on-call ophthalmology and neurology|Hospital de referência com oftalmologia e neurologia de urgência']];
+  $('proBox').innerHTML = `<div class="card"><h3>${esc(T3('Tu consulta|Your clinic|A sua consulta'))}</h3><div class="u-f2">${gen.map(([k, l]) => `<div class="field"><label for="g_${k}">${esc(T3(l))}</label><input id="g_${k}" data-g="${k}" type="text" value="${esc(c[k])}" autocomplete="off"></div>`).join('')}</div></div>` +
+    ['ocl', 'ana', 'last'].map(p => `<div class="card"><h3>${esc(T3(PROT[p].n))}</h3><div class="u-f2">${CFG_CAMPOS.filter(f => f[0] === p).map(([, k, l, un, fu]) => `<div class="field"><label for="v_${k}">${esc(T3(l))} (${esc(un)})</label><input id="v_${k}" data-v="${k}" type="text" inputmode="decimal" value="${esc(nfx(c[k], 3))}" autocomplete="off"><small class="muted">${c[k] !== CFG_DEF[k] ? esc(T3f('Valor de referencia: {0}|Reference value: {0}|Valor de referência: {0}', nfx(CFG_DEF[k], 3))) : ''}${fu ? (c[k] !== CFG_DEF[k] ? ' · ' : '') + esc(FUENTES[fu].split('.')[0]) : esc(T3('Según tu producto|According to your product|Segundo o seu produto'))}</small></div>`).join('')}</div></div>`).join('') +
+    `<div class="card"><div class="actions" style="margin-top:0"><button class="btn btn-ghost" id="proReset" type="button">${ico('refresh')}<span>${esc(T3('Volver a los valores de referencia|Restore the reference values|Repor os valores de referência'))}</span></button></div>
+     <h3>${esc(T3('Fuentes|Sources|Fontes'))}</h3><ul class="fa-ul">${Object.values(FUENTES).map(f => `<li>${esc(f)}</li>`).join('')}</ul></div>`;
+  $$('[data-g]').forEach(x => x.oninput = () => { S.cfg[x.dataset.g] = x.value.trim(); guarda(); });
+  $$('[data-v]').forEach(x => x.onchange = () => { const v = parseFloat(String(x.value).replace(',', '.')); if (!(v > 0)) { toast(T3('Escribe un número mayor que cero|Enter a number greater than zero|Escreva um número maior que zero')); x.value = nfx(C()[x.dataset.v], 3); return; } S.cfg[x.dataset.v] = v; guarda(); pintaProt(); });
+  $('proReset').onclick = () => { if (!confirm(T3('¿Volver a los valores de referencia de las dosis?|Restore the reference dose values?|Repor os valores de referência das doses?'))) return; CFG_CAMPOS.forEach(f => { S.cfg[f[1]] = CFG_DEF[f[1]]; }); guarda(); pintaProt(); };
+}
+
+/* ── navegación: «siguiente» en la urgencia lleva al informe sin cerrar la actuación ── */
+const CAN_NEXT = i => true;
+
+/* ── ejemplo: simulacro de oclusión vascular ya registrado (datos, no frases: se ve en cualquier idioma) ── */
+function aplicaEjemplo() {
+  const t0 = Date.now() - 75 * 60000, m = x => t0 + x * 1000;
+  S.urg = {tipo: 'ocl', sim: true, inicio: t0, pac: {id: 'SIM-01', kg: '58', edad: '41', sexo: T3('Mujer|Female|Mulher'), alergias: '—', med: '—'}, proc: {producto: T3('Ácido hialurónico reticulado 20 mg/mL|Cross-linked hyaluronic acid 20 mg/mL|Ácido hialurónico reticulado 20 mg/mL'), lote: 'SIM-2611', zona: T3('Surco nasogeniano derecho|Right nasolabial fold|Sulco nasogeniano direito'), volumen: '0,4 mL', tecnica: T3('Aguja 27 G|27 G needle|Agulha 27 G')}, horaSint: hora(t0 - 60000), zonas: 2, ult: {hya: m(4020)},
+    hechos: {para: m(5), vision: m(40), valora: m(130), hya: m(250), masaje: m(420)},
+    log: [{ts: t0, k: 'inicio', prot: 'ocl'}, {ts: m(5), k: 'paso', prot: 'ocl', paso: 'para'}, {ts: m(40), k: 'paso', prot: 'ocl', paso: 'vision'}, {ts: m(130), k: 'paso', prot: 'ocl', paso: 'valora'},
+      {ts: m(250), k: 'dosis', prot: 'ocl', paso: 'hya', d: {f: 'hya', u: 1000, ml: 6.67, z: 2}}, {ts: m(420), k: 'paso', prot: 'ocl', paso: 'masaje'},
+      {ts: m(3850), k: 'nota', prot: 'ocl', d: T3('Relleno capilar de 4 s en el ala nasal|Capillary refill 4 s on the nasal ala|Preenchimento capilar de 4 s na asa do nariz')}, {ts: m(4020), k: 'dosis', prot: 'ocl', paso: 'hya', d: {f: 'hya', u: 1000, ml: 6.67, z: 2}}],
+    cte: [{ts: m(300), ta: '128/82', fc: '96', sat: '98', glu: ''}, {ts: m(3900), ta: '122/78', fc: '84', sat: '99', glu: ''}],
+    notas: '', final: ''};
+  S.sim = true; S.ver = null; S.esEjemplo = true;
+}
+window.addEventListener('langchange', () => { if (S.esEjemplo && S.urg && S.urg.pac.id === 'SIM-01') { aplicaEjemplo(); guarda(); (RENDER[step] || (() => {}))(); } });
+
+/* ── arranque ── */
+(async () => {
+  const p = await cargaEstado(); if (p) S = {...S0(), ...p, cfg: {...CFG_DEF, ...(p.cfg || {})}};
+  iniciaUI(); go(S.urg && !S.esEjemplo ? 1 : 0);
+})();
+
+</script>
+</body></html>
